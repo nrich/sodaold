@@ -156,8 +156,6 @@ static void TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         add(asmTokens, OpCode::CALL, str_toupper(name));
 
-        env = env->Parent();
-
         addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX), str_toupper(name) + "_RETURN");
         add(asmTokens, OpCode::IDXA);
         add(asmTokens, OpCode::PUSHA);
@@ -379,6 +377,8 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     }
 
     check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+
+    env = env->Parent();
 
     functions.insert(std::make_pair(name, Function(name, params)));
 
