@@ -27,6 +27,7 @@ enum class TokenType {
     STRING,
     REAL,
     INTEGER,
+    BUILTIN,
     FUNCTION,
     CHARACTER,
 
@@ -68,8 +69,11 @@ enum class TokenType {
     SEMICOLON,
     COLON,
     COMMA,
+    DOT,
     QUOTE,
     APOSTROPHE,
+
+    ACCESSOR,
 
 /*
     AUTO,
@@ -114,7 +118,6 @@ enum class TokenType {
     ELSE,
     FOR,
     IF,
-    MAKE,
     RETURN,
     SIZEOF,
     SLOT,

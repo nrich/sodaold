@@ -14,19 +14,6 @@ static std::shared_ptr<Environment> env;
 
 static void expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp);
 
-struct Function {
-    std::string name;
-    std::string end;
-    std::vector<std::string> params;
-
-    Function(const std::string &name, std::vector<std::string> params) {
-        this->name = name;
-        this->params = params;
-    }
-};
-
-static std::map<std::string, Function> functions;
-
 static std::string str_toupper(std::string s) {
     std::transform(
         s.begin(), s.end(), s.begin(),
@@ -52,12 +39,21 @@ static void error(const std::string &err) {
 }
 
 static std::string identifier(const Token &token) {
-    if (token.type != TokenType::IDENTIFIER && token.type != TokenType::FUNCTION) {
+    if (token.type != TokenType::IDENTIFIER) {
         error("Identifier expected");
     }
 
     return token.str;
 }
+
+static std::string function(const Token &token) {
+    if (token.type != TokenType::FUNCTION && token.type != TokenType::IDENTIFIER) {
+        error("Function name expected");
+    }
+
+    return token.str;
+}
+
 
 static void check(const Token &token, TokenType type, const std::string &err) {
     if (token.type != type)
@@ -106,6 +102,12 @@ static void addValue32(std::vector<AsmToken> &asmTokens, OpCode opcode, const ui
     asmTokens.push_back(token);
 }
 
+static void addSyscall(std::vector<AsmToken> &asmTokens, OpCode opcode, SysCall syscall, RuntimeValue r, const std::string label="") {
+    auto token = AsmToken(opcode, std::make_pair(syscall, r));
+    token.label = label;
+    asmTokens.push_back(token);
+}
+
 static uint32_t Int16AsValue(int16_t i) {
     const uint32_t QNAN = 0x7F800000;
 
@@ -119,6 +121,26 @@ static uint64_t Int32AsValue(int32_t i) {
     return (uint64_t)(QNAN|(uint32_t)i);
 }
 
+static void builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    auto token = tokens[current];
+
+    check(tokens[current+1], TokenType::LEFT_PAREN, "`(' expected");
+
+    current += 2;
+
+    if (token.str == "make") {
+        expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        add(asmTokens, OpCode::CALLOC);
+    } else if (token.str == "puts") {
+        expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        add(asmTokens, OpCode::POPC);
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
+    } else {
+        error(std::string("Unknown function `") + token.str + std::string("'"));
+    }
+}
 
 static void TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
@@ -139,30 +161,33 @@ static void TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     } else if (token.type == TokenType::REAL) {
         addFloat(asmTokens, OpCode::SETC, std::stof(token.str));
         add(asmTokens, OpCode::PUSHC);
+    } else if (token.type == TokenType::BUILTIN) {
+        builtin(cpu, asmTokens, tokens);
     } else if (token.type == TokenType::FUNCTION) {
-        auto name = token.str;
-        current++;
-
-        check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
-
-        if (tokens[current].type != TokenType::RIGHT_PAREN) {
-            expression(cpu, asmTokens, tokens, 0);
-        }
-
-        while (tokens[current].type != TokenType::RIGHT_PAREN) {
-            check(tokens[current++], TokenType::COMMA, "`,' expected");
-            expression(cpu, asmTokens, tokens, 0);
-        }
-        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
-        add(asmTokens, OpCode::CALL, str_toupper(name));
-
-        addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX), str_toupper(name) + "_RETURN");
-        add(asmTokens, OpCode::IDXA);
-        add(asmTokens, OpCode::PUSHA);
-        add(asmTokens, OpCode::POPIDX);
-        addPointer(asmTokens, OpCode::SAVEIDX, env->get(FRAME_INDEX));
     } else if (token.type == TokenType::IDENTIFIER) {
-        if (env->isGlobal(token.str)) {
+        if (env->isFunction(token.str)) {
+            auto name = token.str;
+            current++;
+
+            check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
+
+            if (tokens[current].type != TokenType::RIGHT_PAREN) {
+                expression(cpu, asmTokens, tokens, 0);
+            }
+
+            while (tokens[current].type != TokenType::RIGHT_PAREN) {
+                check(tokens[current++], TokenType::COMMA, "`,' expected");
+                expression(cpu, asmTokens, tokens, 0);
+            }
+            check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+            add(asmTokens, OpCode::CALL, str_toupper(name));
+
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX), str_toupper(name) + "_RETURN");
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::PUSHA);
+            add(asmTokens, OpCode::POPIDX);
+            addPointer(asmTokens, OpCode::SAVEIDX, env->get(FRAME_INDEX));
+        } else if (env->isGlobal(token.str)) {
             addPointer(asmTokens, OpCode::LOADC, env->get(token.str));
             add(asmTokens, OpCode::PUSHC);
         } else {
@@ -195,6 +220,16 @@ static void prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<
         prefix(cpu, asmTokens, tokens, rbp);
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::NOT);
+        add(asmTokens, OpCode::PUSHC);
+    } else if (tokens[current].type == TokenType::SIZEOF) {
+        current++;
+        auto name = tokens[current].str;
+        auto _struct = env->getStruct(name);
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::SETA, Int16AsValue(_struct.size()));
+        } else {
+            addValue32(asmTokens, OpCode::SETA, Int32AsValue(_struct.size()));
+        }
         add(asmTokens, OpCode::PUSHC);
     } else if (tokens[current].type == TokenType::PLUS) {
         current++;
@@ -248,6 +283,9 @@ static void Op(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Toke
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::MOD);
         add(asmTokens, OpCode::PUSHC);
+    } else if (token.type == TokenType::ACCESSOR) {
+        auto property = identifier(tokens[current++]);
+        add(asmTokens, OpCode::POPIDX);
     } else {
         error(std::string("op expected, got `") + token.str + "'");
     }
@@ -306,16 +344,7 @@ static void statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vect
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
         add(asmTokens, OpCode::RETURN);
     } else {
-        auto name = identifier(tokens[current]);
-
-        if (tokens[current+1].type == TokenType::ASSIGN) {
-            current++;
-            expression(cpu, asmTokens, tokens);
-        } else {
-            //error(tokens[current].str + ": Unexpected token");
-            expression(cpu, asmTokens, tokens);
-        }
-
+        expression(cpu, asmTokens, tokens);
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
     }
 }
@@ -324,7 +353,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     std::vector<std::string> params;
 
     check(tokens[current++], TokenType::DEF, "`def' expected");
-    auto name = identifier(tokens[current++]);
+    auto name = function(tokens[current++]);
     check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
 
     if (tokens[current].type != TokenType::RIGHT_PAREN) {
@@ -337,7 +366,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
         auto param = identifier(tokens[current++]);
         params.push_back(param);
     }
-    check(tokens[current++], TokenType::RIGHT_PAREN, "`)!!!' expected");
+    check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
     add(asmTokens, OpCode::JMP, str_toupper(name) + "_END");
     add(asmTokens, OpCode::NOP, str_toupper(name));
@@ -380,7 +409,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     env = env->Parent();
 
-    functions.insert(std::make_pair(name, Function(name, params)));
+    env->defineFunction(name, params);
 
     add(asmTokens, OpCode::POPC);
     add(asmTokens, OpCode::RETURN);
@@ -395,7 +424,7 @@ static void define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std::
     check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
     check(tokens[current++], TokenType::SLOT, "`slot' expected");
     auto slot = identifier(tokens[current++]);
-    check(tokens[current++], TokenType::SEMICOLON, "`;4' expected");
+    check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
     slots.push_back(slot);
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         check(tokens[current++], TokenType::SLOT, "`slot' expected");
@@ -404,7 +433,9 @@ static void define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std::
         slots.push_back(slot);
     }
     check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
-    check(tokens[current++], TokenType::SEMICOLON, "`;5' expected");
+    check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+    env->defineStruct(name, slots);
 }
 
 std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {

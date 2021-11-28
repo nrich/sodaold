@@ -120,10 +120,14 @@ std::vector<Token> parse(const std::string &source) {
                     break;
                 case 'm':
                     if (keyword == "make") {
-                        tokenType = TokenType::MAKE;
+                        tokenType = TokenType::BUILTIN;
                     }
                     break;
- 
+                case 'p':
+                    if (keyword == "puts") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    break;
                 case 'r':
                     if (keyword == "return") {
                         tokenType = TokenType::RETURN;
@@ -205,7 +209,14 @@ std::vector<Token> parse(const std::string &source) {
         } else {
             switch (source[i++]) {
                 case '-':
-                    tokens.push_back(Token(TokenType::MINUS, i, "-", Precedence::TERM));
+                    switch (source[i]) {
+                        case '>':
+                            tokens.push_back(Token(TokenType::ACCESSOR, i, "->", Precedence::CALL));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::MINUS, i, "-", Precedence::TERM));
+                    }
                     break;
                 case '+':
                     tokens.push_back(Token(TokenType::PLUS, i, "+", Precedence::TERM));
@@ -236,6 +247,9 @@ std::vector<Token> parse(const std::string &source) {
                     break;
                 case ',':
                     tokens.push_back(Token(TokenType::COMMA, i, ","));
+                    break;
+                case '.':
+                    tokens.push_back(Token(TokenType::DOT, i, "."));
                     break;
                 case '?':
                     tokens.push_back(Token(TokenType::QUESTION_MARK, i, "?"));
@@ -313,9 +327,9 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case '(':
-                    if (tokens.back().type == TokenType::IDENTIFIER) {
-                        tokens.back().type = TokenType::FUNCTION;
-                    }
+//                    if (tokens.back().type == TokenType::IDENTIFIER) {
+//                        tokens.back().type = TokenType::FUNCTION;
+//                    }
                     tokens.push_back(Token(TokenType::LEFT_PAREN, i, "(", Precedence::CALL));
                     break;
                 case ')':
