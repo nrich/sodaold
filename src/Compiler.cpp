@@ -433,18 +433,18 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             add(asmTokens, OpCode::IDXB);
             add(asmTokens, OpCode::PUSHB);
 
-            add(asmTokens, OpCode::POPIDX);
-
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(name, SimpleType::UNDEFINED)));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(name, SimpleType::UNDEFINED)));
-            }
-
             auto type = expression(cpu, asmTokens, tokens);
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
             add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(name, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(name, type)));
+            }
+
             add(asmTokens, OpCode::WRITECX);
             add(asmTokens, OpCode::POPIDX);
         } else {
