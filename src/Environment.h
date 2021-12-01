@@ -28,6 +28,10 @@ struct Struct {
         }
     }
 
+    bool operator==(const Struct &rhs) const {
+        return name == rhs.name;
+    }
+
     VariableType getType(const std::string &slot) const {
         return VariableType(SimpleType::SCALAR);
     }
@@ -190,6 +194,22 @@ class Environment {
                 vars.insert(std::make_pair(name + std::string(i, ' '), std::make_pair(next+i, type)));
             }
             return next;
+        }
+
+        uint32_t set(const std::string &name, VariableType type) {
+            auto found = vars.find(name);
+
+            if (found != vars.end()) {
+                //vars[name] = std::make_pair(found->second.first, type);
+                found->second.second = type;
+                return found->second.first;
+            } else {
+                if (parent) {
+                    return parent->get(name);
+                } else {
+                    throw std::invalid_argument("Unknown variable `" + name + "'");
+                }
+            }
         }
 
         std::shared_ptr<Environment> Parent() const {

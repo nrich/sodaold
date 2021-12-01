@@ -254,10 +254,20 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             return VariableType(*_struct);
         } else if (env->isGlobal(token.str)) {
+            auto type = env->getType(token.str);
+
+            if (type == Undefined)
+                error(std::string("Variable `") + token.str + "' used before initialisation");
+
             addPointer(asmTokens, OpCode::LOADC, env->get(token.str));
             add(asmTokens, OpCode::PUSHC);
-            return env->getType(token.str);
+            return type;
         } else {
+            auto type = env->getType(token.str);
+
+            if (type == Undefined)
+                error(std::string("Variable `") + token.str + "' used before initialisation");
+
             add(asmTokens, OpCode::PUSHIDX);
             addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
             add(asmTokens, OpCode::IDXB);
@@ -271,7 +281,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             add(asmTokens, OpCode::IDXC);
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::PUSHC);
-            return env->getType(token.str);
+            return type;
         }
     } else {
         error(std::string("value expected, got `") + token.str + "'");
@@ -439,6 +449,9 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type = expression(cpu, asmTokens, tokens);
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + name + "'");
+
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::POPIDX);
 
@@ -453,6 +466,9 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
         } else {
             auto type = expression(cpu, asmTokens, tokens);
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + name + "'");
 
             add(asmTokens, OpCode::POPC);
             addPointer(asmTokens, OpCode::STOREC, env->create(name, type));
@@ -493,7 +509,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
             add(asmTokens, OpCode::POPC);
-            addPointer(asmTokens, OpCode::STOREC, env->get(varname));
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
             return type;
         } else {
             current += 2;
@@ -502,17 +518,22 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
             add(asmTokens, OpCode::IDXB);
             add(asmTokens, OpCode::PUSHB);
-            add(asmTokens, OpCode::POPIDX);
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
-            }
 
             auto type = expression(cpu, asmTokens, tokens);
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
             add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
             add(asmTokens, OpCode::WRITECX);
             add(asmTokens, OpCode::POPIDX);
 
@@ -577,7 +598,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
 
-    VariableType type = None;
+    VariableType type = SimpleType::NONE;
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         auto newtype = statement(cpu, asmTokens, tokens);
 
