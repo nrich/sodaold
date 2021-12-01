@@ -133,13 +133,21 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
     current += 2;
 
     if (token.str == "make") {
-        expression(cpu, asmTokens, tokens, 0);
+        auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None)
+            error("Function `make': Cannot assign a void value to parameter 1");
+
         add(asmTokens, OpCode::CALLOC);
         return Scalar;
     } else if (token.str == "puts") {
-        expression(cpu, asmTokens, tokens, 0);
+        auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None)
+            error("Function `puts': Cannot assign a void value to parameter 1");
+
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
         return None;
@@ -184,14 +192,20 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
 
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
-                expression(cpu, asmTokens, tokens, 0);
+                auto type = expression(cpu, asmTokens, tokens, 0);
                 argcount++;
+
+                if (type == None)
+                    error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
             }
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
-                expression(cpu, asmTokens, tokens, 0);
+                auto type = expression(cpu, asmTokens, tokens, 0);
                 argcount++;
+
+                if (type == None)
+                    error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
             }
             check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
@@ -221,8 +235,11 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             size_t argcount = 0;
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
-                expression(cpu, asmTokens, tokens, 0);
+                auto type = expression(cpu, asmTokens, tokens, 0);
                 argcount++;
+
+                if (type == None)
+                    error(std::string("Struct `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
 
                 add(asmTokens, OpCode::POPC);
                 add(asmTokens, OpCode::WRITECX);
@@ -235,8 +252,11 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
-                expression(cpu, asmTokens, tokens, 0);
+                auto type = expression(cpu, asmTokens, tokens, 0);
                 argcount++;
+
+                if (type == None)
+                    error(std::string("Struct `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
 
                 add(asmTokens, OpCode::POPC);
                 add(asmTokens, OpCode::WRITECX);
@@ -510,7 +530,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             add(asmTokens, OpCode::POPC);
             addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
-            return type;
+            //return type;
         } else {
             current += 2;
 
@@ -537,12 +557,12 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             add(asmTokens, OpCode::WRITECX);
             add(asmTokens, OpCode::POPIDX);
 
-            return type;
+            //return type;
         }
     } else {
         auto type = expression(cpu, asmTokens, tokens);
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
-        return type;
+        //return type;
     }
     return None;
 }
@@ -610,7 +630,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 type = newtype;
             } else {
                 if (existing != _new) {
-                    //error("Return type mismatch");
+                    error("Return type mismatch");
                 }
             }
         } else if (std::holds_alternative<Struct>(type) && std::holds_alternative<Struct>(newtype)) {
@@ -618,17 +638,17 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto _new = std::get<Struct>(newtype);
 
             if (existing.name != _new.name) {
-                //error("Return type mismatch");
+                error("Return type mismatch");
             }
         } else if (std::holds_alternative<SimpleType>(type) && std::holds_alternative<Struct>(newtype)) {
             auto existing = std::get<SimpleType>(type);
             if (existing == SimpleType::NONE) {
                 type = newtype;
             } else {
-                //error("Return type mismatch");
+                error("Return type mismatch");
             }
         } else {
-            //error("Return type mismatch");
+            error("Return type mismatch");
         }
     }
 
