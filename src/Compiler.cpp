@@ -14,6 +14,9 @@ static std::shared_ptr<Environment> env;
 
 static VariableType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp);
 
+static const VariableType None(SimpleType::NONE);
+static const VariableType Undefined(SimpleType::UNDEFINED);
+static const VariableType Scalar(SimpleType::SCALAR);
 
 static std::string str_toupper(std::string s) {
     std::transform(
@@ -133,17 +136,17 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         add(asmTokens, OpCode::CALLOC);
-        return VariableType(SimpleType::SCALAR);
+        return Scalar;
     } else if (token.str == "puts") {
         expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
-        return VariableType(SimpleType::NONE);
+        return None;
     } else {
         error(std::string("Unknown function `") + token.str + std::string("'"));
     }
-    return VariableType(SimpleType::NONE);
+    return None;
 }
 
 static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
@@ -155,7 +158,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
         add(asmTokens, OpCode::PUSHIDX);
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHC);
-        return VariableType(SimpleType::SCALAR);
+        return Scalar;
     } else if (token.type == TokenType::INTEGER) {
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
@@ -163,11 +166,11 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             addValue32(asmTokens, OpCode::SETC, Int32AsValue((int32_t)std::stoi(token.str)));
         }
         add(asmTokens, OpCode::PUSHC);
-        return VariableType(SimpleType::SCALAR);
+        return Scalar;
     } else if (token.type == TokenType::REAL) {
         addFloat(asmTokens, OpCode::SETC, std::stof(token.str));
         add(asmTokens, OpCode::PUSHC);
-        return VariableType(SimpleType::SCALAR);
+        return Scalar;
     } else if (token.type == TokenType::BUILTIN) {
         return builtin(cpu, asmTokens, tokens);
     } else if (token.type == TokenType::FUNCTION) {
@@ -273,7 +276,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
     } else {
         error(std::string("value expected, got `") + token.str + "'");
     }
-    return VariableType(SimpleType::NONE);
+    return None;
 }
 
 static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp) {
@@ -299,7 +302,7 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
             addValue32(asmTokens, OpCode::SETA, Int32AsValue(_struct->size()));
         }
         add(asmTokens, OpCode::PUSHC);
-        return VariableType(SimpleType::SCALAR);
+        return Scalar;
     } else if (tokens[current].type == TokenType::PLUS) {
         current++;
         return prefix(cpu, asmTokens, tokens, rbp);
@@ -387,7 +390,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         error(std::string("op expected, got `") + token.str + "'");
     }
 
-    return VariableType(SimpleType::NONE);
+    return None;
 }
 
 static VariableType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp=0) {
@@ -419,9 +422,9 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
         current++;
 
         if (env->inFunction()) {
-            env->create(name, VariableType(SimpleType::UNDEFINED));
+            env->create(name, Undefined);
         } else {
-            env->create(name, VariableType(SimpleType::UNDEFINED));
+            env->create(name, Undefined);
         }
     } else if (tokens[current].type == TokenType::ASSIGN) {
         current++;
@@ -466,7 +469,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         define_variable(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::RETURN) {
         current++;
-        VariableType type = VariableType(SimpleType::NONE);
+        VariableType type = None;
 
         if (tokens[current].type != TokenType::SEMICOLON) {
             type = expression(cpu, asmTokens, tokens);
@@ -520,7 +523,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
         return type;
     }
-    return VariableType(SimpleType::NONE);
+    return None;
 }
 
 static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
@@ -564,7 +567,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
         } else {
             addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
         }
-        env->create(rargs[i], VariableType(SimpleType::NONE));
+        env->create(rargs[i], None);
     }
 
     addPointer(asmTokens, OpCode::LOADC, env->get(FRAME_INDEX));
@@ -574,7 +577,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
 
-    VariableType type = VariableType(SimpleType::NONE);
+    VariableType type = None;
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         auto newtype = statement(cpu, asmTokens, tokens);
 
@@ -648,7 +651,7 @@ std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {
 
     env = std::make_shared<Environment>(0);
 
-    env->create(FRAME_INDEX, VariableType(SimpleType::SCALAR));
+    env->create(FRAME_INDEX, Scalar);
 
     while (current < tokens.size()) {
         auto token = tokens[current];

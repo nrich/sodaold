@@ -13,7 +13,6 @@ enum class SimpleType {
     SCALAR
 };
 
-
 typedef std::variant<struct Struct, SimpleType> VariableType;
 
 struct Struct {
