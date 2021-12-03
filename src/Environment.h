@@ -32,6 +32,10 @@ struct Struct {
         return name == rhs.name;
     }
 
+    bool operator!=(const Struct &rhs) const {
+        return name != rhs.name;
+    }
+
     VariableType getType(const std::string &slot) const {
         return VariableType(SimpleType::SCALAR);
     }
@@ -49,10 +53,10 @@ struct Struct {
 
 struct Function {
     const std::string name;
-    const std::vector<std::string> params;
+    const std::vector<std::pair<std::string, VariableType>> params;
     const VariableType returnType;
 
-    Function(const std::string &name, std::vector<std::string> params, VariableType returnType) : name(name), params(params), returnType(returnType) {
+    Function(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) : name(name), params(params), returnType(returnType) {
     }
 };
 
@@ -62,16 +66,12 @@ class Environment {
         std::map<const std::string, std::shared_ptr<Function>> functions;
         std::map<const std::string, std::shared_ptr<Struct>> structs;
         std::shared_ptr<Environment> parent;
-        std::shared_ptr<Function> enclosing;
         const int32_t offset;
     public:
-        Environment(int32_t offset) : parent(NULL), enclosing(NULL), offset(offset) {
+        Environment(int32_t offset) : parent(NULL), offset(offset) {
         }
 
-        Environment(std::shared_ptr<Environment> parent) : parent(parent), enclosing(NULL), offset(2) {
-        }
-
-        Environment(std::shared_ptr<Environment> parent, std::shared_ptr<Function> function) : parent(parent), enclosing(function), offset(2) {
+        Environment(std::shared_ptr<Environment> parent) : parent(parent), offset(1) {
         }
 
         void defineStruct(const std::string &name, std::vector<std::string> slotlist) {
@@ -79,7 +79,7 @@ class Environment {
             structs.insert(std::make_pair(name, _struct));
         }
 
-        void defineFunction(const std::string &name, std::vector<std::string> params, VariableType returnType) {
+        void defineFunction(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) {
             auto function = std::make_shared<Function>(name, params, returnType);
             functions.insert(std::make_pair(name, function));
         }
@@ -214,10 +214,6 @@ class Environment {
 
         std::shared_ptr<Environment> Parent() const {
             return parent;
-        }
-
-        std::shared_ptr<Function> enclosingFunction() const {
-            return enclosing;
         }
 
 
