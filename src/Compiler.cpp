@@ -410,6 +410,17 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::MOD);
         add(asmTokens, OpCode::PUSHC);
         return type;
+    } else if (token.type == TokenType::LEFT_BRACKET) {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::ADD);
+        add(asmTokens, OpCode::PUSHC);
+        add(asmTokens, OpCode::POPIDX);
+        add(asmTokens, OpCode::IDXC);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.type == TokenType::ACCESSOR) {
         auto varType = lType;
 
@@ -470,16 +481,47 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
     if (tokens[current].type == TokenType::SEMICOLON) {
         current++;
 
+        env->create(name, Undefined);
+    } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+        current++;
+
+        check(tokens[current], TokenType::INTEGER, "integer expected");
+        auto size = std::stoi(tokens[current++].str);
+
+        check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+        check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+
         if (env->inFunction()) {
-            env->create(name, Undefined);
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            add(asmTokens, OpCode::IDXB);
+            add(asmTokens, OpCode::PUSHB);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(name, Scalar)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(name, Scalar)));
+            }
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addShort(asmTokens, OpCode::ALLOC, size);
+            add(asmTokens, OpCode::PUSHIDX);
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
         } else {
-            env->create(name, Undefined);
+            addShort(asmTokens, OpCode::ALLOC, size);
+            addPointer(asmTokens, OpCode::SAVEIDX, env->create(name, Scalar));
         }
+
+        env->create(name, Scalar);
     } else if (tokens[current].type == TokenType::ASSIGN) {
         current++;
 
         if (env->inFunction()) {
-
             add(asmTokens, OpCode::PUSHIDX);
             addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
             add(asmTokens, OpCode::IDXB);
@@ -580,6 +622,56 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             add(asmTokens, OpCode::POPIDX);
 
             //return type;
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::LEFT_BRACKET) {
+        auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot index function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot index struct type");
+        } else {
+            current += 2;
+
+            expression(cpu, asmTokens, tokens);
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+            check(tokens[current++], TokenType::ASSIGN, "`=' expected");
+
+            if (env->isGlobal(varname)) {
+                addPointer(asmTokens, OpCode::LOADC, env->get(varname));
+                add(asmTokens, OpCode::PUSHC);
+            } else {
+                add(asmTokens, OpCode::PUSHIDX);
+                addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+                add(asmTokens, OpCode::IDXB);
+                add(asmTokens, OpCode::PUSHB);
+                add(asmTokens, OpCode::POPIDX);
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+                } else {
+                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+                }
+                add(asmTokens, OpCode::IDXC);
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::PUSHC);
+            }
+
+            add(asmTokens, OpCode::POPB);
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::ADD);
+
+            add(asmTokens, OpCode::PUSHC);
+
+            auto type = expression(cpu, asmTokens, tokens);
+            check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to array"));
+
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+            add(asmTokens, OpCode::WRITECX);
         }
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::ACCESSOR) {
         auto varname = tokens[current].str;

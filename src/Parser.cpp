@@ -342,7 +342,7 @@ std::vector<Token> parse(const std::string &source) {
                     tokens.push_back(Token(TokenType::RIGHT_BRACE, i, "}"));
                     break;
                 case '[':
-                    tokens.push_back(Token(TokenType::LEFT_BRACKET, i, "["));
+                    tokens.push_back(Token(TokenType::LEFT_BRACKET, i, "[", Precedence::CALL));
                     break;
                 case ']':
                     tokens.push_back(Token(TokenType::RIGHT_BRACKET, i, "]"));
