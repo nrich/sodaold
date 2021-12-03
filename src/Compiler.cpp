@@ -581,6 +581,60 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             //return type;
         }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::ACCESSOR) {
+        auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot index function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot index struct type");
+        } else {
+            auto varType = env->getType(varname);
+            current += 2;
+            auto property = identifier(tokens[current++]);
+            check(tokens[current++], TokenType::ASSIGN, "`=' expected");
+
+            auto type = expression(cpu, asmTokens, tokens);
+            check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to property `") + property + "'");
+
+            if (env->isGlobal(varname)) {
+                addPointer(asmTokens, OpCode::LOADC, env->get(varname));
+                add(asmTokens, OpCode::PUSHC);
+            } else {
+                add(asmTokens, OpCode::PUSHIDX);
+                addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+                add(asmTokens, OpCode::IDXB);
+                add(asmTokens, OpCode::PUSHB);
+                add(asmTokens, OpCode::POPIDX);
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+                } else {
+                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+                }
+                add(asmTokens, OpCode::IDXC);
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::PUSHC);
+            }
+
+            auto _struct = std::get<Struct>(varType);
+
+            auto offset = _struct.getOffset(property);
+
+            add(asmTokens, OpCode::POPIDX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
+            }
+
+            add(asmTokens, OpCode::IDXC);
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::WRITECX);
+        }
     } else {
         auto type = expression(cpu, asmTokens, tokens);
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
