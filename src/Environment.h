@@ -71,7 +71,7 @@ class Environment {
         Environment(int32_t offset) : parent(NULL), offset(offset) {
         }
 
-        Environment(std::shared_ptr<Environment> parent) : parent(parent), offset(1) {
+        Environment(std::shared_ptr<Environment> parent) : parent(parent), offset(0) {
         }
 
         void defineStruct(const std::string &name, std::vector<std::string> slotlist) {
