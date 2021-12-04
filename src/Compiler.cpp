@@ -509,8 +509,6 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
         if (env->inFunction()) {
             add(asmTokens, OpCode::PUSHIDX);
             addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
-            add(asmTokens, OpCode::IDXB);
-            add(asmTokens, OpCode::PUSHB);
 
             if (cpu == 16) {
                 addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(name, Scalar)));
