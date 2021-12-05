@@ -134,6 +134,28 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
 
         add(asmTokens, OpCode::CALLOC);
         return Scalar;
+    } else if (token.str == "getc") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::READKEY, RuntimeValue::C);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "gets") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None)
+            error("Function `gets': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::PUSHIDX);
+        add(asmTokens, OpCode::CALLOC);
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::READ, RuntimeValue::IDX);
+        add(asmTokens, OpCode::PUSHIDX);
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPIDX);
+        add(asmTokens, OpCode::PUSHC);
+
+        return Scalar;
     } else if (token.str == "puts") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
