@@ -17,15 +17,12 @@ typedef std::variant<struct Struct, SimpleType> VariableType;
 
 struct Struct {
     std::string name;
-    std::map<std::string, uint32_t> slots;
+    std::vector<std::pair<std::string, VariableType>> slots;
     size_t size() const {
         return slots.size();
     }
 
-    Struct(const std::string &name, std::vector<std::string> slotlist) : name(name) {
-        for (auto slot : slotlist) {
-            slots[slot] = slots.size();
-        }
+    Struct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slots) : name(name), slots(slots) {
     }
 
     bool operator==(const Struct &rhs) const {
@@ -37,17 +34,25 @@ struct Struct {
     }
 
     VariableType getType(const std::string &slot) const {
-        return VariableType(SimpleType::SCALAR);
+        for (const auto &s : slots) {
+            if (s.first == slot)
+                return s.second;
+        }
+
+        throw std::invalid_argument("Undefined slot `" + slot + "' in struct `" + name + "'");
+        return SimpleType::NONE;
     }
 
     uint32_t getOffset(const std::string &slot) const {
-        auto found = slots.find(slot);
-
-        if (found == slots.end()) {
-            throw std::invalid_argument("Undefined slot `" + slot + "' for struct `" + name + "'");
+        uint32_t i = 0;
+        for (const auto &s : slots) {
+            if (s.first == slot)
+                return i;
+            i++;
         }
 
-        return found->second;
+        throw std::invalid_argument("Undefined slot `" + slot + "' in struct `" + name + "'");
+        return 0;
     }
 };
 
@@ -63,8 +68,8 @@ struct Function {
 class Environment {
     private:
         std::map<const std::string, std::pair<uint32_t, VariableType>> vars;
-        std::map<const std::string, std::shared_ptr<Function>> functions;
-        std::map<const std::string, std::shared_ptr<Struct>> structs;
+        std::map<const std::string, Function> functions;
+        std::map<const std::string, Struct> structs;
         std::shared_ptr<Environment> parent;
         const int32_t offset;
     public:
@@ -74,17 +79,19 @@ class Environment {
         Environment(std::shared_ptr<Environment> parent) : parent(parent), offset(0) {
         }
 
-        void defineStruct(const std::string &name, std::vector<std::string> slotlist) {
-            auto _struct = std::make_shared<Struct>(name, slotlist);
+        Struct defineStruct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slotlist) {
+            auto _struct = Struct(name, slotlist);
             structs.insert(std::make_pair(name, _struct));
+            return _struct;
         }
 
-        void defineFunction(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) {
-            auto function = std::make_shared<Function>(name, params, returnType);
+        Function defineFunction(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) {
+            auto function = Function(name, params, returnType);
             functions.insert(std::make_pair(name, function));
+            return function;
         }
 
-        std::shared_ptr<Struct> getStruct(const std::string &name) const {
+        Struct getStruct(const std::string &name) const {
             auto found = structs.find(name);
             if (found != structs.end()) {
                 return found->second;
@@ -97,7 +104,7 @@ class Environment {
             }
         }
 
-        std::shared_ptr<Function> getFunction(const std::string &name) const {
+        Function getFunction(const std::string &name) const {
             auto found = functions.find(name);
             if (found != functions.end()) {
                 return found->second;
