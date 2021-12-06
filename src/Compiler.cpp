@@ -735,13 +735,6 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             auto varType = env->getType(varname);
             current += 2;
             auto property = identifier(tokens[current++]);
-            check(tokens[current++], TokenType::ASSIGN, "`=' expected");
-
-            auto type = expression(cpu, asmTokens, tokens);
-            check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
-
-            if (type == None)
-                error(std::string("Cannot assign a void value to property `") + property + "'");
 
             if (env->isGlobal(varname)) {
                 addPointer(asmTokens, OpCode::LOADC, env->get(varname));
@@ -772,6 +765,39 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             }
 
             add(asmTokens, OpCode::IDXC);
+
+            while (tokens[current].type != TokenType::ASSIGN) {
+                if (tokens[current].type == TokenType::ACCESSOR) {
+                    current++;
+
+                    auto varType = _struct.getType(property);
+                    auto property = identifier(tokens[current++]);
+
+                    if (varType == Scalar)
+                        break;
+
+                    _struct = std::get<Struct>(varType);
+
+                    auto offset = _struct.getOffset(property);
+
+                    if (cpu == 16) {
+                        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
+                    } else {
+                        addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
+                    }
+
+                    add(asmTokens, OpCode::IDXC);
+                }
+            }
+
+            check(tokens[current++], TokenType::ASSIGN, "`=' expected");
+
+            auto type = expression(cpu, asmTokens, tokens);
+            check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to property `") + property + "'");
+
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::WRITECX);
         }
@@ -910,8 +936,14 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
             slots.push_back(std::make_pair(slot, Scalar));
         } else if (tokens[current].type == TokenType::STRUCT) {
             auto slot = identifier(tokens[current+1]);
-            auto _struct = define_struct(cpu, asmTokens, tokens, name);
-            slots.push_back(std::make_pair(slot, _struct));
+
+            if (prefix.size()) {
+                auto _struct = define_struct(cpu, asmTokens, tokens, prefix + "__" + name);
+                slots.push_back(std::make_pair(slot, _struct));
+            } else {
+                auto _struct = define_struct(cpu, asmTokens, tokens, name);
+                slots.push_back(std::make_pair(slot, _struct));
+            }
         } else {
             error("`slot' or `struct' expected");
         }
