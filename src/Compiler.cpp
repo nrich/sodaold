@@ -787,6 +787,19 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                     }
 
                     add(asmTokens, OpCode::IDXC);
+                } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+                    current++;
+                    add(asmTokens, OpCode::PUSHIDX);
+                    expression(cpu, asmTokens, tokens);
+                    check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+                    add(asmTokens, OpCode::POPB);
+                    add(asmTokens, OpCode::POPA);
+                    add(asmTokens, OpCode::ADD);
+                    add(asmTokens, OpCode::PUSHC);
+                    add(asmTokens, OpCode::POPIDX);
+                } else {
+                    error("Index operator expected");
                 }
             }
 
