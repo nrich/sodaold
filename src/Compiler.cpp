@@ -512,6 +512,33 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::PUSHC);
 
         return _struct.getType(property);
+    } else if (token.type == TokenType::AND) {
+        static int ANDs = 1;
+        int _and = ANDs++;
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::JMPEZ, "AND_" + std::to_string(_and) + "_FALSE");
+        add(asmTokens, OpCode::PUSHC);
+
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::AND);
+        add(asmTokens, OpCode::PUSHC, "AND_" + std::to_string(_and) + "_FALSE");
+    } else if (token.type == TokenType::OR) {
+        static int ORs = 1;
+
+        int _or = ORs++;
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::JMPNZ, "OR_" + std::to_string(_or) + "_TRUE");
+
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::PUSHC, "OR_" + std::to_string(_or) + "_TRUE");
+
     } else {
         error(std::string("op expected, got `") + token.str + "'");
     }
@@ -618,11 +645,53 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
     }
 }
 
+static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens);
+static void if_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    static int IFs = 1;
+    int _if = IFs++;
+
+    check(tokens[current++], TokenType::IF, "`if' expected");
+    check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
+
+    auto type = expression(cpu, asmTokens, tokens);
+    check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
+
+    check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
+
+    add(asmTokens, OpCode::POPC);
+    add(asmTokens, OpCode::JMPEZ, "IF_" + std::to_string(_if) + "_FALSE");
+
+    //VariableType type = SimpleType::NONE;
+    while (tokens[current].type != TokenType::RIGHT_BRACE) {
+        auto type = statement(cpu, asmTokens, tokens);
+    }
+
+    check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+
+    if (tokens[current].type == TokenType::ELSE) {
+        add(asmTokens, OpCode::JMP, "IF_" + std::to_string(_if) + "_TRUE");
+        add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_FALSE");
+        current++;
+        check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
+
+        while (tokens[current].type != TokenType::RIGHT_BRACE) {
+            auto type = statement(cpu, asmTokens, tokens);
+        }
+        check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+        add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_TRUE");
+    } else {
+
+        add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_FALSE");
+    }
+}
+
 static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::CONST) {
         define_const(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::AUTO) {
         define_variable(cpu, asmTokens, tokens);
+    } else if (tokens[current].type == TokenType::IF) {
+        if_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::RETURN) {
         if (!env->inFunction()) {
             error("Cannot return when not in function");
@@ -992,7 +1061,7 @@ std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {
             define_struct(cpu, asmTokens, tokens);
         } else {
             statement(cpu, asmTokens, tokens);
-        } 
+        }
     }
 
     return asmTokens;

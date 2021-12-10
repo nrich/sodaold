@@ -266,7 +266,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '&':
                     switch (source[i]) {
                         case '&':
-                            tokens.push_back(Token(TokenType::AND, i, "&&"));
+                            tokens.push_back(Token(TokenType::AND, i, "&&", Precedence::AND));
                             i++;
                             break;
                         default:
@@ -285,7 +285,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '|':
                     switch (source[i]) {
                         case '|':
-                            tokens.push_back(Token(TokenType::OR, i, "||"));
+                            tokens.push_back(Token(TokenType::OR, i, "||", Precedence::OR));
                             i++;
                             break;
                         default:
