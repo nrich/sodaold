@@ -685,6 +685,33 @@ static void if_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     }
 }
 
+
+static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    static int WHILEs = 1;
+    int _while = WHILEs++;
+
+    check(tokens[current++], TokenType::WHILE, "`while' expected");
+    check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
+
+    add(asmTokens, OpCode::NOP, "WHILE_" + std::to_string(_while) + "_CHECK");
+    auto type = expression(cpu, asmTokens, tokens);
+    check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
+
+    check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
+
+    add(asmTokens, OpCode::POPC);
+    add(asmTokens, OpCode::JMPEZ, "WHILE_" + std::to_string(_while) + "_FALSE");
+
+    //VariableType type = SimpleType::NONE;
+    while (tokens[current].type != TokenType::RIGHT_BRACE) {
+        auto type = statement(cpu, asmTokens, tokens);
+    }
+    add(asmTokens, OpCode::JMP, "WHILE_" + std::to_string(_while) + "_CHECK");
+
+    check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+    add(asmTokens, OpCode::NOP, "WHILE_" + std::to_string(_while) + "_FALSE");
+}
+
 static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::CONST) {
         define_const(cpu, asmTokens, tokens);
@@ -692,6 +719,8 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         define_variable(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::IF) {
         if_statment(cpu, asmTokens, tokens);
+    } else if (tokens[current].type == TokenType::WHILE) {
+        while_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::RETURN) {
         if (!env->inFunction()) {
             error("Cannot return when not in function");
