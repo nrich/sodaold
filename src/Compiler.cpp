@@ -757,7 +757,7 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
     statement(cpu, asmTokens, tokens);
-    check(tokens[current++], TokenType::RIGHT_PAREN, "`)!' expected");
+    check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
     statement(cpu, asmTokens, tokens);
 
