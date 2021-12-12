@@ -215,6 +215,8 @@ class Environment {
             if (parent) {
                 return parent->isGlobal(name);
             } else {
+                if (found == vars.end())
+                    throw std::invalid_argument("Unknown variable `" + name + "'");
                 return true;
             }
         }
