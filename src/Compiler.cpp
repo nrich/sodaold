@@ -736,6 +736,37 @@ static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std:
     add(asmTokens, OpCode::NOP, "WHILE_" + std::to_string(_while) + "_FALSE");
 }
 
+static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    static int FORs = 1;
+    int _for = FORs++;
+
+    check(tokens[current++], TokenType::FOR, "`for' expected");
+    check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
+
+    if (tokens[current].type == TokenType::SEMICOLON) {
+        current++;
+        add(asmTokens, OpCode::NOP);
+    } else {
+        statement(cpu, asmTokens, tokens);
+    }
+
+    add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_CHECK");
+    expression(cpu, asmTokens, tokens);
+    add(asmTokens, OpCode::POPC);
+    add(asmTokens, OpCode::JMPEZ, "FOR_" + std::to_string(_for) + "_FALSE");
+    check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+    statement(cpu, asmTokens, tokens);
+    check(tokens[current++], TokenType::RIGHT_PAREN, "`)!' expected");
+
+    statement(cpu, asmTokens, tokens);
+
+    add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_CHECK");
+
+    add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_FALSE");
+}
+
+
 static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::CONST) {
         define_const(cpu, asmTokens, tokens);
@@ -745,6 +776,8 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         if_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::WHILE) {
         while_statment(cpu, asmTokens, tokens);
+    } else if (tokens[current].type == TokenType::FOR) {
+        for_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::LEFT_BRACE) {
         env = env->beginScope(env);
         current++;
