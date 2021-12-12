@@ -208,8 +208,8 @@ class Environment {
         bool isGlobal(const std::string &name) {
             auto found = vars.find(name);
 
-            if (found != vars.end() && inFunction()) {
-                return false;
+            if (found != vars.end()) {
+                return !inFunction();
             }
 
             if (parent) {

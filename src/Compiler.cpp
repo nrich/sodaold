@@ -717,6 +717,9 @@ static void if_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     }
 }
 
+static std::string LOOP_BREAK = "";
+static std::string LOOP_CONTINUE = "";
+
 static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     static int WHILEs = 1;
     int _while = WHILEs++;
@@ -731,7 +734,16 @@ static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std:
     add(asmTokens, OpCode::POPC);
     add(asmTokens, OpCode::JMPEZ, "WHILE_" + std::to_string(_while) + "_FALSE");
 
+    auto old_break = LOOP_BREAK;
+    auto old_continue = LOOP_CONTINUE;
+
+    LOOP_BREAK = "WHILE_" + std::to_string(_while) + "_FALSE";
+    LOOP_CONTINUE = "WHILE_" + std::to_string(_while) + "_CHECK";
+
     declaration(cpu, asmTokens, tokens);
+
+    LOOP_BREAK = old_break;
+    LOOP_CONTINUE = old_continue;
 
     add(asmTokens, OpCode::JMP, "WHILE_" + std::to_string(_while) + "_CHECK");
 
@@ -761,7 +773,16 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     statement(cpu, asmTokens, tokens);
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
+    auto old_break = LOOP_BREAK;
+    auto old_continue = LOOP_CONTINUE;
+
+    LOOP_BREAK = "FOR_" + std::to_string(_for) + "_FALSE";
+    LOOP_CONTINUE = "FOR_" + std::to_string(_for) + "_CHECK";
+
     declaration(cpu, asmTokens, tokens);
+
+    LOOP_BREAK = old_break;
+    LOOP_CONTINUE = old_continue;
 
     add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_CHECK");
 
@@ -965,6 +986,18 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
         while_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::FOR) {
         for_statment(cpu, asmTokens, tokens);
+    } else if (tokens[current].type == TokenType::BREAK) {
+        current++;
+        if (LOOP_BREAK.size() == 0)
+            error("Cannot break when not in loop");
+        add(asmTokens, OpCode::JMP, LOOP_BREAK);
+        check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+    } else if (tokens[current].type == TokenType::CONTINUE) {
+        current++;
+        if (LOOP_CONTINUE.size() == 0)
+            error("Cannot continue when not in loop");
+        add(asmTokens, OpCode::JMP, LOOP_CONTINUE);
+        check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
     } else if (tokens[current].type == TokenType::LEFT_BRACE) {
         env = env->beginScope(env);
         current++;
