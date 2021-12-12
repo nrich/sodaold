@@ -656,35 +656,21 @@ static void if_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     auto type = expression(cpu, asmTokens, tokens);
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
-    check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
-
     add(asmTokens, OpCode::POPC);
     add(asmTokens, OpCode::JMPEZ, "IF_" + std::to_string(_if) + "_FALSE");
 
-    //VariableType type = SimpleType::NONE;
-    while (tokens[current].type != TokenType::RIGHT_BRACE) {
-        auto type = statement(cpu, asmTokens, tokens);
-    }
-
-    check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+    statement(cpu, asmTokens, tokens);
 
     if (tokens[current].type == TokenType::ELSE) {
         add(asmTokens, OpCode::JMP, "IF_" + std::to_string(_if) + "_TRUE");
         add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_FALSE");
         current++;
-        check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
-
-        while (tokens[current].type != TokenType::RIGHT_BRACE) {
-            auto type = statement(cpu, asmTokens, tokens);
-        }
-        check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+        statement(cpu, asmTokens, tokens);
         add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_TRUE");
     } else {
-
         add(asmTokens, OpCode::NOP, "IF_" + std::to_string(_if) + "_FALSE");
     }
 }
-
 
 static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     static int WHILEs = 1;
@@ -697,18 +683,13 @@ static void while_statment(int cpu, std::vector<AsmToken> &asmTokens, const std:
     auto type = expression(cpu, asmTokens, tokens);
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
-    check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
-
     add(asmTokens, OpCode::POPC);
     add(asmTokens, OpCode::JMPEZ, "WHILE_" + std::to_string(_while) + "_FALSE");
 
-    //VariableType type = SimpleType::NONE;
-    while (tokens[current].type != TokenType::RIGHT_BRACE) {
-        auto type = statement(cpu, asmTokens, tokens);
-    }
+    statement(cpu, asmTokens, tokens);
+
     add(asmTokens, OpCode::JMP, "WHILE_" + std::to_string(_while) + "_CHECK");
 
-    check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
     add(asmTokens, OpCode::NOP, "WHILE_" + std::to_string(_while) + "_FALSE");
 }
 
@@ -721,6 +702,14 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         if_statment(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::WHILE) {
         while_statment(cpu, asmTokens, tokens);
+    } else if (tokens[current].type == TokenType::LEFT_BRACE) {
+        env = env->beginScope(env);
+        current++;
+        while (tokens[current].type != TokenType::RIGHT_BRACE) {
+            auto type = statement(cpu, asmTokens, tokens);
+        }
+        check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
+        env = env->endScope();
     } else if (tokens[current].type == TokenType::RETURN) {
         if (!env->inFunction()) {
             error("Cannot return when not in function");
@@ -966,7 +955,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     add(asmTokens, OpCode::JMP, str_toupper(name) + "_END");
     add(asmTokens, OpCode::NOP, str_toupper(name));
-    env = std::make_shared<Environment>(env);
+    env = env->beginScope(name, env);
 
     auto rargs = params;
     std::reverse(rargs.begin(), rargs.end());
@@ -1020,7 +1009,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     check(tokens[current++], TokenType::RIGHT_BRACE, "`}' expected");
 
-    env = env->Parent();
+    env = env->endScope();
 
     env->defineFunction(name, params, type);
 
@@ -1074,7 +1063,7 @@ std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {
 
     asmTokens.push_back(AsmToken(OpCode::NOP));
 
-    env = std::make_shared<Environment>(0);
+    env = Environment::createGlobal(0);
 
     addPointer(asmTokens, OpCode::SETC, 0);
     addPointer(asmTokens, OpCode::STOREC, env->create(FRAME_INDEX, Scalar));

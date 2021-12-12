@@ -72,11 +72,36 @@ class Environment {
         std::map<const std::string, Struct> structs;
         std::shared_ptr<Environment> parent;
         const int32_t offset;
-    public:
-        Environment(int32_t offset) : parent(NULL), offset(offset) {
+
+        const std::string functionName;
+
+        int localBlocks = 0;
+        Environment(int32_t offset) : parent(NULL), offset(offset), functionName("") {
         }
 
-        Environment(std::shared_ptr<Environment> parent) : parent(parent), offset(0) {
+        Environment(std::shared_ptr<Environment> parent, const std::string &functionName) : parent(parent), offset(0), functionName(functionName) {
+        }
+
+        Environment(std::shared_ptr<Environment> parent, int32_t offset, const std::string &functionName) : parent(parent), offset(offset), functionName(functionName) {
+        }
+
+    public:
+        static std::shared_ptr<Environment> createGlobal(int32_t offset) {
+            return std::shared_ptr<Environment>(new Environment(offset));
+        }
+
+        std::shared_ptr<Environment> beginScope(const std::string &functionName, std::shared_ptr<Environment> parent) {
+            return std::shared_ptr<Environment>(new Environment(parent, functionName));
+        }
+
+        std::shared_ptr<Environment> beginScope(std::shared_ptr<Environment> parent) {
+            return std::shared_ptr<Environment>(new Environment(parent, parent->Offset()+parent->size(), parent->functionName));
+        }
+
+        std::shared_ptr<Environment> endScope() {
+            auto localBlock = std::to_string(parent->localBlocks);
+            parent->localBlocks += this->size();
+            return parent;
         }
 
         Struct defineStruct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slotlist) {
@@ -183,11 +208,15 @@ class Environment {
         bool isGlobal(const std::string &name) {
             auto found = vars.find(name);
 
-            if (found != vars.end() && parent) {
+            if (found != vars.end() && inFunction()) {
                 return false;
             }
 
-            return true;
+            if (parent) {
+                return parent->isGlobal(name);
+            } else {
+                return true;
+            }
         }
 
         int32_t create(const std::string &name, VariableType type, size_t count=1) {
@@ -196,7 +225,7 @@ class Environment {
                 return existing->second.first;
             }
 
-            int32_t next = Offset() + vars.size();
+            int32_t next = Offset() + vars.size() + localBlocks;
             for (size_t i = 0; i  < count; i++) {
                 vars.insert(std::make_pair(name + std::string(i, ' '), std::make_pair(next+i, type)));
             }
@@ -225,7 +254,7 @@ class Environment {
 
 
         bool inFunction() const {
-            return parent ? true : false;
+            return functionName.size() > 0;
         }
 };
 
