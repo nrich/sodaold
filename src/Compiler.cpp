@@ -512,6 +512,48 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::PUSHC);
 
         return _struct.getType(property);
+    } else if (token.type == TokenType::EQUAL) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::EQ);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.type == TokenType::NOT_EQUAL) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::NE);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.type == TokenType::LESS) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::LT);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.type == TokenType::LESS_EQUAL) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::LE);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.type == TokenType::GREATER) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::GT);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.type == TokenType::GREATER_EQUAL) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::GE);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.type == TokenType::AND) {
         static int ANDs = 1;
         int _and = ANDs++;
@@ -522,10 +564,10 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
 
-        add(asmTokens, OpCode::POPB);
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::AND);
+        add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHC, "AND_" + std::to_string(_and) + "_FALSE");
+
+        return type;
     } else if (token.type == TokenType::OR) {
         static int ORs = 1;
 
@@ -539,6 +581,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHC, "OR_" + std::to_string(_or) + "_TRUE");
 
+        return type;
     } else {
         error(std::string("op expected, got `") + token.str + "'");
     }
