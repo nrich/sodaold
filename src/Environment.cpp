@@ -2,7 +2,7 @@
 
 #include "Environment.h"
 
-Array::Array(VariableType type, size_t length) : type(std::shared_ptr<VariableType>(new VariableType(type))), length(length) {
+Array::Array(VariableType type, size_t length, size_t offset) : type(std::shared_ptr<VariableType>(new VariableType(type))), length(length), offset(offset) {
 }
 
 bool Array::operator==(const Array &rhs) const {

@@ -18,8 +18,9 @@ typedef std::variant<struct Struct, struct Array, SimpleType> VariableType;
 struct Array {
     std::shared_ptr<VariableType> type;
     size_t length;
+    size_t offset;
 
-    Array(VariableType type, size_t length);
+    Array(VariableType type, size_t length, size_t offset);
 
     bool operator==(const Array &rhs) const;
     bool operator!=(const Array &rhs) const;
