@@ -13,7 +13,23 @@ enum class SimpleType {
     SCALAR
 };
 
-typedef std::variant<struct Struct, SimpleType> VariableType;
+typedef std::variant<struct Struct, struct Array, SimpleType> VariableType;
+
+struct Array {
+    std::shared_ptr<VariableType> type;
+    size_t length;
+
+    Array(VariableType type, size_t length);
+
+    bool operator==(const Array &rhs) const;
+    bool operator!=(const Array &rhs) const;
+
+    VariableType getType() const;
+
+    size_t size() const {
+        return length;
+    }
+};
 
 struct Struct {
     std::string name;
@@ -25,35 +41,13 @@ struct Struct {
     Struct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slots) : name(name), slots(slots) {
     }
 
-    bool operator==(const Struct &rhs) const {
-        return name == rhs.name;
-    }
+    bool operator==(const Struct &rhs) const;
 
-    bool operator!=(const Struct &rhs) const {
-        return name != rhs.name;
-    }
+    bool operator!=(const Struct &rhs) const;
 
-    VariableType getType(const std::string &slot) const {
-        for (const auto &s : slots) {
-            if (s.first == slot)
-                return s.second;
-        }
+    VariableType getType(const std::string &slot) const;
 
-        throw std::invalid_argument("Undefined slot `" + slot + "' in struct `" + name + "'");
-        return SimpleType::NONE;
-    }
-
-    uint32_t getOffset(const std::string &slot) const {
-        uint32_t i = 0;
-        for (const auto &s : slots) {
-            if (s.first == slot)
-                return i;
-            i++;
-        }
-
-        throw std::invalid_argument("Undefined slot `" + slot + "' in struct `" + name + "'");
-        return 0;
-    }
+    uint32_t getOffset(const std::string &slot) const;
 };
 
 struct Function {

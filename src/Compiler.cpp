@@ -433,6 +433,8 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         add(asmTokens, OpCode::SUB);
         add(asmTokens, OpCode::PUSHC);
         return type;
+//    } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+//        current++;
     } else {
         return TokenAsValue(cpu, asmTokens, tokens);
     }
@@ -623,8 +625,18 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
 
         check(tokens[current], TokenType::INTEGER, "integer expected");
         auto size = std::stoi(tokens[current++].str);
-
         check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+        while (tokens[current].type == TokenType::LEFT_BRACKET) {
+            current++;
+
+            check(tokens[current], TokenType::INTEGER, "integer expected");
+
+            auto dim = std::stoi(tokens[current++].str);
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+        }
+
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
         if (env->inFunction()) {
@@ -839,6 +851,13 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             error("Cannot index struct type");
         } else {
             current += 2;
+
+            auto varType = env->getType(varname);
+
+            if (!std::holds_alternative<Array>(varType))
+                error("Array expected");
+
+            auto array = std::get<Array>(varType);
 
             expression(cpu, asmTokens, tokens);
 
