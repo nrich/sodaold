@@ -125,14 +125,68 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     current += 2;
 
-    if (token.str == "make") {
+    if (token.str == "abs") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
-        if (type == None)
-            error("Function `make': Cannot assign a void value to parameter 1");
+        if (type == None || type == Undefined)
+            error("Function `abs': Cannot assign a void value to parameter 1");
 
-        add(asmTokens, OpCode::CALLOC);
+        add(asmTokens, OpCode::POPA);
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
+        } else {
+            addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
+        }
+        add(asmTokens, OpCode::CMP);
+        add(asmTokens, OpCode::MOVCB);
+        add(asmTokens, OpCode::MUL);
+        add(asmTokens, OpCode::PUSHC);
+
+        return Scalar;
+    } else if (token.str == "atan") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `atan': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::ATAN);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "cos") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `cos': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::COS);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "float") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `float': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::FLT);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "int") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `int': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::INT);
+        add(asmTokens, OpCode::PUSHC);
         return Scalar;
     } else if (token.str == "getc") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -156,6 +210,78 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::PUSHC);
 
         return Scalar;
+    } else if (token.str == "log") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `log': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::LOG);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "make") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None)
+            error("Function `make': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::CALLOC);
+        return Scalar;
+    } else if (token.str == "max") {
+        static int MAXs = 1;
+        int _max = MAXs++;
+
+        auto left_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto right_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (left_type == None || left_type == Undefined)
+            error("Function `max': Cannot assign a void value to parameter 1");
+        if (right_type == None || right_type == Undefined)
+            error("Function `max': Cannot assign a void value to parameter 2");
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::GT);
+
+        add(asmTokens, OpCode::JMPNZ, "MAX_" + std::to_string(_max) + "_TRUE");
+        add(asmTokens, OpCode::PUSHB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::PUSHA, "MAX_" + std::to_string(_max) + "_TRUE");
+        return Scalar;
+    } else if (token.str == "min") {
+        static int MINs = 1;
+        int _min = MINs++;
+
+        auto left_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto right_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (left_type == None || left_type == Undefined)
+            error("Function `min': Cannot assign a void value to parameter 1");
+        if (right_type == None || right_type == Undefined)
+            error("Function `min': Cannot assign a void value to parameter 2");
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::LT);
+
+        add(asmTokens, OpCode::JMPNZ, "MIN_" + std::to_string(_min) + "_TRUE");
+        add(asmTokens, OpCode::PUSHB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::PUSHA, "MIN_" + std::to_string(_min) + "_TRUE");
+        return Scalar;
     } else if (token.str == "puts") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -166,6 +292,39 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
         return None;
+    } else if (token.str == "sin") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `sin': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::SIN);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "sqrt") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `sqrt': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::SQR);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
+    } else if (token.str == "tan") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `tan': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::TAN);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else {
         error(std::string("Unknown function `") + token.str + std::string("'"));
     }

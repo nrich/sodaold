@@ -80,8 +80,16 @@ std::vector<Token> parse(const std::string &source) {
 
             switch (keyword[0]) {
                 case 'a':
+                    if (keyword == "abs") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "auto") {
                         tokenType = TokenType::AUTO;
+                    }
+                    else
+                    if (keyword == "atan") {
+                        tokenType = TokenType::BUILTIN;
                     }
                     break;
                 case 'b':
@@ -90,12 +98,20 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'c':
+                    if (keyword == "cls") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "const") {
                         tokenType = TokenType::CONST;
                     }
                     else
                     if (keyword == "continue") {
                         tokenType = TokenType::CONTINUE;
+                    }
+                    else
+                    if (keyword == "cos") {
+                        tokenType = TokenType::BUILTIN;
                     }
                     break;
                 case 'd':
@@ -109,6 +125,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'f':
+                    if (keyword == "float") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "for") {
                         tokenType = TokenType::FOR;
                     }
@@ -126,9 +146,30 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "if") {
                         tokenType = TokenType::IF;
                     }
+                    else
+                    if (keyword == "int") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    break;
+                case 'l':
+                    if (keyword == "len") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
+                    if (keyword == "line") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
+                    if (keyword == "log") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 'm':
-                    if (keyword == "make") {
+                    if (keyword == "max") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
+                    if (keyword == "min") {
                         tokenType = TokenType::BUILTIN;
                     }
                     break;
@@ -138,11 +179,19 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'r':
+                    if (keyword == "rand") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "return") {
                         tokenType = TokenType::RETURN;
                     }
                     break;
                 case 's':
+                    if (keyword == "sin") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "sizeof") {
                         tokenType = TokenType::SIZEOF;
                     }
@@ -151,11 +200,33 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::SLOT;
                     }
                     else
+                    if (keyword == "sqrt") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
+                    if (keyword == "sound") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "struct") {
                         tokenType = TokenType::STRUCT;
                     }
                     break;
+                case 't':
+                    if (keyword == "tan") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    break;
+                case 'v':
+                    if (keyword == "voice") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    break;
                 case 'w':
+                    if (keyword == "wait") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "while") {
                         tokenType = TokenType::WHILE;
                     }
