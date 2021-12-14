@@ -946,6 +946,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                 add(asmTokens, OpCode::PUSHC);
             } else {
                 add(asmTokens, OpCode::PUSHIDX);
+                addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
                 if (cpu == 16) {
                     addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
                 } else {
