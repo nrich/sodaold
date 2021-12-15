@@ -313,6 +313,30 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::SIN);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "sound") {
+        auto frequency_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto duration_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto voice_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (frequency_type == None || frequency_type == Undefined)
+            error("Function `sound': Cannot assign a void value to parameter 1");
+        if (duration_type == None || duration_type == Undefined)
+            error("Function `sound': Cannot assign a void value to parameter 2");
+        if (voice_type == None || voice_type == Undefined)
+            error("Function `sound': Cannot assign a void value to parameter 3");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::SOUND, RuntimeValue::NONE);
+
+        return None;
     } else if (token.str == "sqrt") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -345,6 +369,50 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::TAN);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "voice") {
+        const int VoiceArgs = 6;
+        const std::string VoiceIndex = " VOICE";
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        if (env->inFunction()) {
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(VoiceIndex, Scalar, VoiceArgs)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(VoiceIndex, Scalar, VoiceArgs)));
+            }
+        } else {
+            addPointer(asmTokens, OpCode::SETIDX, env->create(VoiceIndex, Scalar, VoiceArgs));
+        }
+
+        for (int i = 0; i < VoiceArgs; i++) {
+            add(asmTokens, OpCode::PUSHIDX);
+            auto type = expression(cpu, asmTokens, tokens, 0);
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+            add(asmTokens, OpCode::WRITECX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+            }
+
+            check(tokens[current++], TokenType::COMMA, "`,' expected");
+        }
+
+        expression(cpu, asmTokens, tokens, 0);
+        add(asmTokens, OpCode::POPC);
+
+        addPointer(asmTokens, OpCode::SETIDX, env->get(VoiceIndex));
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::VOICE, RuntimeValue::C);
+
+        add(asmTokens, OpCode::POPIDX);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        return None;
     } else if (token.str == "vsync") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         add(asmTokens, OpCode::YIELD);
