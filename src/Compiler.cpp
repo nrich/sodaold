@@ -214,7 +214,29 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::POPIDX);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         return None;
+    } else if (token.str == "drawpixel") {
+        auto x_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
 
+        auto y_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto c_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (x_type == None || x_type == Undefined)
+            error("Function `sdrawpixel': Cannot assign a void value to parameter 1");
+        if (y_type == None || y_type == Undefined)
+            error("Function `drawpixel': Cannot assign a void value to parameter 2");
+        if (c_type == None || c_type == Undefined)
+            error("Function `drawpixel': Cannot assign a void value to parameter 3");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::DRAW, RuntimeValue::NONE);
+        return None;
     } else if (token.str == "float") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -353,6 +375,16 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::RND);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "setpalette") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `setpalette': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::PALETTE, RuntimeValue::C);
+        return None;
     } else if (token.str == "sin") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");

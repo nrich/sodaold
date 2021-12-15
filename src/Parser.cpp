@@ -122,6 +122,10 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "drawline") {
                         tokenType = TokenType::BUILTIN;
                     }
+                    else
+                    if (keyword == "drawpixel") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 'e':
                     if (keyword == "else") {
@@ -188,6 +192,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 's':
+                    if (keyword == "setpalette") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "sin") {
                         tokenType = TokenType::BUILTIN;
                     }
