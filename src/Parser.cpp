@@ -204,6 +204,10 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
+                    if (keyword == "srand") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "sound") {
                         tokenType = TokenType::BUILTIN;
                     }
@@ -221,12 +225,12 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "voice") {
                         tokenType = TokenType::BUILTIN;
                     }
-                    break;
-                case 'w':
-                    if (keyword == "wait") {
+                    else
+                    if (keyword == "vsync") {
                         tokenType = TokenType::BUILTIN;
                     }
-                    else
+                    break;
+                case 'w':
                     if (keyword == "while") {
                         tokenType = TokenType::WHILE;
                     }

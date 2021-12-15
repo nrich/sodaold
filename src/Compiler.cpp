@@ -155,6 +155,10 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::ATAN);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "cls") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::CLS, RuntimeValue::NONE);
+        return None;
     } else if (token.str == "cos") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -292,6 +296,12 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
         return None;
+    } else if (token.str == "rand") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        add(asmTokens, OpCode::RND);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.str == "sin") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -314,6 +324,16 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::SQR);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "srand") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `srand': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::SEED);
+        return None;
     } else if (token.str == "tan") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -325,6 +345,10 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::TAN);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "vsync") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        add(asmTokens, OpCode::YIELD);
+        return None;
     } else {
         error(std::string("Unknown function `") + token.str + std::string("'"));
     }
