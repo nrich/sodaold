@@ -170,6 +170,51 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::COS);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "drawline") {
+        const int DrawLineArgs = 5;
+        const std::string DrawLineIndex = " DRAWLINE";
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        if (env->inFunction()) {
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(DrawLineIndex, Scalar, DrawLineArgs)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(DrawLineIndex, Scalar, DrawLineArgs)));
+            }
+        } else {
+            addPointer(asmTokens, OpCode::SETIDX, env->create(DrawLineIndex, Scalar, DrawLineArgs));
+        }
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        for (int i = 0; i < DrawLineArgs; i++) {
+            add(asmTokens, OpCode::PUSHIDX);
+            auto type = expression(cpu, asmTokens, tokens, 0);
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+            add(asmTokens, OpCode::WRITECX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+            }
+
+            if (i != (DrawLineArgs-1))
+                check(tokens[current++], TokenType::COMMA, "`,' expected");
+        }
+
+        add(asmTokens, OpCode::POPIDX);
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::DRAWLINE, RuntimeValue::IDX);
+
+        add(asmTokens, OpCode::POPIDX);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        return None;
+
     } else if (token.str == "float") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -299,6 +344,12 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
     } else if (token.str == "rand") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::SETC, Int32AsValue(1));
+        }
+
         add(asmTokens, OpCode::RND);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
@@ -387,6 +438,8 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
             addPointer(asmTokens, OpCode::SETIDX, env->create(VoiceIndex, Scalar, VoiceArgs));
         }
 
+        add(asmTokens, OpCode::PUSHIDX);
+
         for (int i = 0; i < VoiceArgs; i++) {
             add(asmTokens, OpCode::PUSHIDX);
             auto type = expression(cpu, asmTokens, tokens, 0);
@@ -406,7 +459,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         expression(cpu, asmTokens, tokens, 0);
         add(asmTokens, OpCode::POPC);
 
-        addPointer(asmTokens, OpCode::SETIDX, env->get(VoiceIndex));
+        add(asmTokens, OpCode::POPIDX);
 
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::VOICE, RuntimeValue::C);
 
@@ -452,18 +505,22 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
         if (env->isFunction(token.str)) {
             auto name = token.str;
             auto function = env->getFunction(name);
+            auto params = function.params.size();
             current++;
 
             size_t argcount = 0;
             check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
 
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
-                auto type = expression(cpu, asmTokens, tokens, 0);
+                if (argcount >= params)
+                    error("Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
 
-                auto param = function.params[argcount];
+                auto type = expression(cpu, asmTokens, tokens, 0);
 
                 if (type == None)
                     error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
+
+                auto param = function.params[argcount];
 
                 if (param.second != Scalar && param.second != type) {
                     auto expected = std::get<Struct>(param.second);
@@ -480,13 +537,16 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             }
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
+                if (argcount >= params)
+                    error("Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
+
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
                 auto type = expression(cpu, asmTokens, tokens, 0);
 
-                auto param = function.params[argcount];
-
                 if (type == None)
                     error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
+
+                auto param = function.params[argcount];
 
                 if (param.second != Scalar && param.second != type) {
                     auto expected = std::get<Struct>(param.second);
@@ -541,6 +601,9 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             size_t argcount = 0;
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
+                if (argcount >= slots)
+                    error("Struct `" + name + "': Too many arguments, expected " + std::to_string(slots));
+
                 auto param = _struct.slots[argcount];
                 add(asmTokens, OpCode::PUSHIDX);
                 auto type = expression(cpu, asmTokens, tokens, 0);
@@ -574,6 +637,9 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             }
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
+                if (argcount >= slots)
+                    error("Struct `" + name + "': Too many arguments, expected " + std::to_string(slots));
+
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
                 auto param = _struct.slots[argcount];
                 add(asmTokens, OpCode::PUSHIDX);
