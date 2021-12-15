@@ -711,6 +711,47 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
     return None;
 }
 
+static Array parseArray(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    check(tokens[current++], TokenType::LEFT_BRACKET, "`[' expected");
+
+    if (tokens[current].type == TokenType::LEFT_BRACKET) {
+        auto array = parseArray(cpu, asmTokens, tokens);
+
+        current++;
+
+        int length = 1;
+        while (tokens[current].type != TokenType::RIGHT_BRACKET) {
+            check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+            if (parseArray(cpu, asmTokens, tokens) != array)
+                error("Array mismatch");
+
+            current++;
+            length++;
+        }
+
+        check(tokens[current], TokenType::RIGHT_BRACKET, "`]' expected");
+
+        return Array(array, length*array.length, array.offset*array.length);
+    } else {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        int length = 1;
+
+        while (tokens[current].type != TokenType::RIGHT_BRACKET) {
+            check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+            if (expression(cpu, asmTokens, tokens, 0) != type)
+                error("Array mismatch");
+
+            length++;
+        }
+
+        check(tokens[current], TokenType::RIGHT_BRACKET, "`]' expected");
+
+        return Array(type, length, 1);
+    }
+}
+
 static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp) {
     if (tokens[current].type == TokenType::LEFT_PAREN) {
         current++;
@@ -750,8 +791,31 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         add(asmTokens, OpCode::SUB);
         add(asmTokens, OpCode::PUSHC);
         return type;
-//    } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
-//        current++;
+    } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+        auto array = parseArray(cpu, asmTokens, tokens);
+
+        addShort(asmTokens, OpCode::ALLOC, array.length);
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(array.length));
+        } else {
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(array.length));
+        }
+
+        for (int i = 0; i < array.length; i++) {
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(-1));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(-1));
+            }
+
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::WRITECX);
+        }
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        return array;
     } else {
         return TokenAsValue(cpu, asmTokens, tokens);
     }
