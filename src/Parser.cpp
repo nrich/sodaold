@@ -44,11 +44,27 @@ static std::string str_tolower(std::string s) {
 std::vector<Token> parse(const std::string &source) {
     std::vector<Token> tokens;
     size_t i = 0;
+    size_t line = 1;
+    size_t pos = 1;
 
     while (i < source.size()) {
+        if (i == '\n') {
+            line++;
+            pos = 1;
+        }
+
         if (isWhitespace(source[i])) {
             i++;
             continue;
+        }
+
+        if (source[i] == '/' && source[i+1] == '/') {
+            i += 2;
+            while (source[i] != '\n')
+                i++;
+
+            line++;
+            pos = 1;
         }
 
         if (isDigit(source[i])) {
@@ -66,7 +82,7 @@ std::vector<Token> parse(const std::string &source) {
                     i++;
             }
 
-            tokens.push_back(Token(tokenType, i, source.substr(start, i-start)));
+            tokens.push_back(Token(tokenType, line, pos, source.substr(start, i-start)));
         } else if (isAlpha(source[i])) {
             auto precedence = Precedence::NONE;
             size_t start = i++;
@@ -252,7 +268,7 @@ std::vector<Token> parse(const std::string &source) {
             if (tokenType != TokenType::IDENTIFIER)
                 token = keyword;
 
-            tokens.push_back(Token(tokenType, i, token, precedence));
+            tokens.push_back(Token(tokenType, line, pos, token, precedence));
         } else if (source[i] == '\'') {
             int start = i++;
             std::string str;
@@ -277,7 +293,7 @@ std::vector<Token> parse(const std::string &source) {
                 str += c;
             }
 
-            tokens.push_back(Token(TokenType::CHARACTER, start, str));
+            tokens.push_back(Token(TokenType::CHARACTER, line, start, str));
         } else if (source[i] == '"') {
             int start = i++;
             std::string str;
@@ -301,147 +317,144 @@ std::vector<Token> parse(const std::string &source) {
                 str += c;
             }
 
-            tokens.push_back(Token(TokenType::STRING, start, str));
+            tokens.push_back(Token(TokenType::STRING, line, start, str));
         } else {
             switch (source[i++]) {
                 case '-':
                     switch (source[i]) {
                         case '>':
-                            tokens.push_back(Token(TokenType::ACCESSOR, i, "->", Precedence::CALL));
+                            tokens.push_back(Token(TokenType::ACCESSOR, line, pos, "->", Precedence::CALL));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::MINUS, i, "-", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::MINUS, line, pos, "-", Precedence::TERM));
                     }
                     break;
                 case '+':
-                    tokens.push_back(Token(TokenType::PLUS, i, "+", Precedence::TERM));
+                    tokens.push_back(Token(TokenType::PLUS, line, pos, "+", Precedence::TERM));
                     break;
                 case '/':
-                    tokens.push_back(Token(TokenType::SLASH, i, "/", Precedence::FACTOR));
+                    tokens.push_back(Token(TokenType::SLASH, line, pos, "/", Precedence::FACTOR));
                     break;
                 case '*':
-                    tokens.push_back(Token(TokenType::STAR, i, "*", Precedence::FACTOR));
+                    tokens.push_back(Token(TokenType::STAR, line, pos, "*", Precedence::FACTOR));
                     break;
                 case '^':
-                    tokens.push_back(Token(TokenType::CARAT, i, "^", Precedence::FACTOR));
+                    tokens.push_back(Token(TokenType::CARAT, line, pos, "^", Precedence::FACTOR));
                     break;
                 case '\\':
-                    tokens.push_back(Token(TokenType::BACKSLASH, i, "\\", Precedence::FACTOR));
+                    tokens.push_back(Token(TokenType::BACKSLASH, line, pos, "\\", Precedence::FACTOR));
                     break;
                 case '%':
-                    tokens.push_back(Token(TokenType::PERCENT, i, "%", Precedence::FACTOR));
+                    tokens.push_back(Token(TokenType::PERCENT, line, pos, "%", Precedence::FACTOR));
                     break;
                 case ';':
-                    tokens.push_back(Token(TokenType::SEMICOLON, i, ";"));
+                    tokens.push_back(Token(TokenType::SEMICOLON, line, pos, ";"));
                     break;
                 case ':':
-                    tokens.push_back(Token(TokenType::COLON, i, ":"));
+                    tokens.push_back(Token(TokenType::COLON, line, pos, ":"));
                     break;
                 case '\'':
-                    tokens.push_back(Token(TokenType::QUOTE, i, "'"));
+                    tokens.push_back(Token(TokenType::QUOTE, line, pos, "'"));
                     break;
                 case ',':
-                    tokens.push_back(Token(TokenType::COMMA, i, ","));
+                    tokens.push_back(Token(TokenType::COMMA, line, pos, ","));
                     break;
                 case '.':
-                    tokens.push_back(Token(TokenType::DOT, i, "."));
+                    tokens.push_back(Token(TokenType::DOT, line, pos, "."));
                     break;
                 case '?':
-                    tokens.push_back(Token(TokenType::QUESTION_MARK, i, "?"));
+                    tokens.push_back(Token(TokenType::QUESTION_MARK, line, pos, "?"));
                     break;
                 case '&':
                     switch (source[i]) {
                         case '&':
-                            tokens.push_back(Token(TokenType::AND, i, "&&", Precedence::AND));
+                            tokens.push_back(Token(TokenType::AND, line, pos, "&&", Precedence::AND));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::AMPERSAND, i, "&"));
+                            tokens.push_back(Token(TokenType::AMPERSAND, line, pos, "&"));
                     }
                     break;
                 case '$':
-                    tokens.push_back(Token(TokenType::DOLLAR, i, "$"));
+                    tokens.push_back(Token(TokenType::DOLLAR, line, pos, "$"));
                     break;
                 case '~':
-                    tokens.push_back(Token(TokenType::TILDE, i, "~"));
+                    tokens.push_back(Token(TokenType::TILDE, line, pos, "~"));
                     break;
                 case '@':
-                    tokens.push_back(Token(TokenType::AT, i, "@"));
+                    tokens.push_back(Token(TokenType::AT, line, pos, "@"));
                     break;
                 case '|':
                     switch (source[i]) {
                         case '|':
-                            tokens.push_back(Token(TokenType::OR, i, "||", Precedence::OR));
+                            tokens.push_back(Token(TokenType::OR, line, pos, "||", Precedence::OR));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::PIPE, i, "|"));
+                            tokens.push_back(Token(TokenType::PIPE, line, pos, "|"));
                     }
                     break;
                 case '`':
-                    tokens.push_back(Token(TokenType::BACKTICK, i, "`"));
+                    tokens.push_back(Token(TokenType::BACKTICK, line, pos, "`"));
                     break;
                 case '=':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::EQUAL, i, "==", Precedence::EQUALITY));
+                            tokens.push_back(Token(TokenType::EQUAL, line, pos, "==", Precedence::EQUALITY));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::ASSIGN, i, "="));
+                            tokens.push_back(Token(TokenType::ASSIGN, line, pos, "="));
                     }
                     break;
                 case '!':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::NOT_EQUAL, i, "!=", Precedence::EQUALITY));
+                            tokens.push_back(Token(TokenType::NOT_EQUAL, line, pos, "!=", Precedence::EQUALITY));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::NOT, i, "!"));
+                            tokens.push_back(Token(TokenType::NOT, line, pos, "!"));
                     }
                     break;
                 case '>':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::GREATER_EQUAL, i, ">=", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::GREATER_EQUAL, line, pos, ">=", Precedence::COMPARISON));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::GREATER, i, ">", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::GREATER, line, pos, ">", Precedence::COMPARISON));
                     }
                     break;
                 case '<':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::LESS_EQUAL, i, "<=", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::LESS_EQUAL, line, pos, "<=", Precedence::COMPARISON));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::LESS, i, "<", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::LESS, line, pos, "<", Precedence::COMPARISON));
                     }
                     break;
                 case '(':
-//                    if (tokens.back().type == TokenType::IDENTIFIER) {
-//                        tokens.back().type = TokenType::FUNCTION;
-//                    }
-                    tokens.push_back(Token(TokenType::LEFT_PAREN, i, "(", Precedence::CALL));
+                    tokens.push_back(Token(TokenType::LEFT_PAREN, line, pos, "(", Precedence::CALL));
                     break;
                 case ')':
-                    tokens.push_back(Token(TokenType::RIGHT_PAREN, i, ")"));
+                    tokens.push_back(Token(TokenType::RIGHT_PAREN, line, pos, ")"));
                     break;
                 case '{':
-                    tokens.push_back(Token(TokenType::LEFT_BRACE, i, "{"));
+                    tokens.push_back(Token(TokenType::LEFT_BRACE, line, pos, "{"));
                     break;
                 case '}':
-                    tokens.push_back(Token(TokenType::RIGHT_BRACE, i, "}"));
+                    tokens.push_back(Token(TokenType::RIGHT_BRACE, line, pos, "}"));
                     break;
                 case '[':
-                    tokens.push_back(Token(TokenType::LEFT_BRACKET, i, "[", Precedence::CALL));
+                    tokens.push_back(Token(TokenType::LEFT_BRACKET, line, pos, "[", Precedence::CALL));
                     break;
                 case ']':
-                    tokens.push_back(Token(TokenType::RIGHT_BRACKET, i, "]"));
+                    tokens.push_back(Token(TokenType::RIGHT_BRACKET, line, pos, "]"));
                     break;
 
             }
@@ -449,7 +462,7 @@ std::vector<Token> parse(const std::string &source) {
         }
     }
 
-    tokens.push_back(Token(TokenType::EOL, i, ""));
+    tokens.push_back(Token(TokenType::EOL, line, pos, ""));
 
     return tokens;
 }
