@@ -1280,8 +1280,11 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     add(asmTokens, OpCode::POPC);
     add(asmTokens, OpCode::JMPEZ, "FOR_" + std::to_string(_for) + "_FALSE");
     check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+    add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_BODY");
 
+    add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_POST");
     statement(cpu, asmTokens, tokens);
+    add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_CHECK");
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
     auto old_break = LOOP_BREAK;
@@ -1290,12 +1293,13 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     LOOP_BREAK = "FOR_" + std::to_string(_for) + "_FALSE";
     LOOP_CONTINUE = "FOR_" + std::to_string(_for) + "_CHECK";
 
+    add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_BODY");
     declaration(cpu, asmTokens, tokens);
 
     LOOP_BREAK = old_break;
     LOOP_CONTINUE = old_continue;
 
-    add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_CHECK");
+    add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_POST");
 
     add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_FALSE");
 }
