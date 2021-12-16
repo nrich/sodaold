@@ -119,6 +119,10 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::DEF;
                     }
                     else
+                    if (keyword == "drawbox") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "drawline") {
                         tokenType = TokenType::BUILTIN;
                     }

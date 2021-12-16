@@ -18,7 +18,7 @@ static const VariableType None(SimpleType::NONE);
 static const VariableType Undefined(SimpleType::UNDEFINED);
 static const VariableType Scalar(SimpleType::SCALAR);
 
-static const int32_t StackFrameSize = 16;
+static const int32_t StackFrameSize = 32;
 
 static std::string str_toupper(std::string s) {
     std::transform(
@@ -170,6 +170,50 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::COS);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "drawbox") {
+        const int DrawBoxArgs = 6;
+        const std::string DrawBoxIndex = " DRAWBOX";
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        if (env->inFunction()) {
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->create(DrawBoxIndex, Scalar, DrawBoxArgs)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->create(DrawBoxIndex, Scalar, DrawBoxArgs)));
+            }
+        } else {
+            addPointer(asmTokens, OpCode::SETIDX, env->create(DrawBoxIndex, Scalar, DrawBoxArgs));
+        }
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        for (int i = 0; i < DrawBoxArgs; i++) {
+            add(asmTokens, OpCode::PUSHIDX);
+            auto type = expression(cpu, asmTokens, tokens, 0);
+            add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
+            add(asmTokens, OpCode::WRITECX);
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+            }
+
+            if (i != (DrawBoxArgs-1))
+                check(tokens[current++], TokenType::COMMA, "`,' expected");
+        }
+
+        add(asmTokens, OpCode::POPIDX);
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::DRAWBOX, RuntimeValue::IDX);
+
+        add(asmTokens, OpCode::POPIDX);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        return None;
     } else if (token.str == "drawline") {
         const int DrawLineArgs = 5;
         const std::string DrawLineIndex = " DRAWLINE";
@@ -889,6 +933,13 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::MOD);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::BACKSLASH) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::IDIV);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::LEFT_BRACKET) {
