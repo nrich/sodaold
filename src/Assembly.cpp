@@ -213,7 +213,7 @@ std::string AsmToken::toString() const {
             s << value;
         } else if (std::holds_alternative<float>(*arg)) {
             auto value = std::get<float>(*arg);
-            s << value;
+            s << std::to_string(value);
         } else if (std::holds_alternative<int32_t>(*arg)) {
             auto value = std::get<int32_t>(*arg);
             s << "0x" << std::setfill('0') << std::setw(6) << std::uppercase << std::hex << (uint32_t)value;
