@@ -330,12 +330,23 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::ACCESSOR, line, pos, "->", Precedence::CALL));
                             i++;
                             break;
+                        case '-':
+                            tokens.push_back(Token(TokenType::DECREMENT, line, pos, "--"));
+                            i++;
+                            break;
                         default:
                             tokens.push_back(Token(TokenType::MINUS, line, pos, "-", Precedence::TERM));
                     }
                     break;
                 case '+':
-                    tokens.push_back(Token(TokenType::PLUS, line, pos, "+", Precedence::TERM));
+                    switch (source[i]) {
+                        case '+':
+                            tokens.push_back(Token(TokenType::INCREMENT, line, pos, "++"));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::PLUS, line, pos, "+", Precedence::TERM));
+                    }
                     break;
                 case '/':
                     tokens.push_back(Token(TokenType::SLASH, line, pos, "/", Precedence::FACTOR));

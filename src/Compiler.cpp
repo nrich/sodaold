@@ -878,6 +878,85 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         add(asmTokens, OpCode::SUB);
         add(asmTokens, OpCode::PUSHC);
         return type;
+    } else if (tokens[current].type == TokenType::INCREMENT) {
+        current++;
+        auto name = identifier(tokens[current]);
+
+        if (!env->isVariable(name))
+            error("Variable expected");
+
+        auto type = prefix(cpu, asmTokens, tokens, rbp);
+
+        if (type != Scalar)
+            error("Scalar expected");
+
+        add(asmTokens, OpCode::POPC);
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+        }
+
+        if (env->inFunction()) {
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(name)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(name)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        } else {
+            addPointer(asmTokens, OpCode::STOREC, env->get(name));
+        }
+
+        add(asmTokens, OpCode::PUSHC);
+
+        return type;
+    } else if (tokens[current].type == TokenType::DECREMENT) {
+        current++;
+        auto name = identifier(tokens[current]);
+
+        if (!env->isVariable(name))
+            error("Variable expected");
+
+        auto type = prefix(cpu, asmTokens, tokens, rbp);
+
+        if (type != Scalar)
+            error("Scalar expected");
+
+        add(asmTokens, OpCode::POPC);
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+        } else {
+            addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+        }
+
+        if (env->inFunction()) {
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(name)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(name)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        } else {
+            addPointer(asmTokens, OpCode::STOREC, env->get(name));
+        }
+
+        add(asmTokens, OpCode::PUSHC);
+
+        return type;
+
     } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
         auto array = parseArray(cpu, asmTokens, tokens);
 

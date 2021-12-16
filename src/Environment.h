@@ -209,6 +209,20 @@ class Environment {
             return false;
         }
 
+        bool isVariable(const std::string &name) const {
+            auto found = vars.find(name);
+
+            if (found != vars.end()) {
+                return true;
+            }
+
+            if (parent) {
+                return parent->isVariable(name);
+            }
+
+            return false;
+        }
+
 
         bool isGlobal(const std::string &name) {
             auto found = vars.find(name);

@@ -39,6 +39,9 @@ enum class TokenType {
     GREATER_EQUAL,
     LESS_EQUAL,
 
+    INCREMENT,
+    DECREMENT,
+
     AND,
     OR,
     NOT,
