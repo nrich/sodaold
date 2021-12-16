@@ -325,6 +325,17 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::PUSHC);
 
         return Scalar;
+    } else if (token.str == "keypressed") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error("Function `keypressed': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::KEYSET, RuntimeValue::C);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.str == "log") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -878,7 +889,7 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
             addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(array.length));
         }
 
-        for (int i = 0; i < array.length; i++) {
+        for (size_t i = 0; i < array.length; i++) {
             if (cpu == 16) {
                 addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(-1));
             } else {
@@ -993,7 +1004,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
         } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset), property);
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
         }
 
         add(asmTokens, OpCode::IDXC);
@@ -1638,6 +1649,8 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     }
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
 
+    auto function = env->defineFunction(name, params, Undefined);
+
     add(asmTokens, OpCode::JMP, str_toupper(name) + "_END");
     add(asmTokens, OpCode::NOP, str_toupper(name));
     env = env->beginScope(name, env);
@@ -1696,7 +1709,8 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     env = env->endScope();
 
-    env->defineFunction(name, params, type);
+    function.returnType = type;
+    env->updateFunction(name, function);
 
     add(asmTokens, OpCode::RETURN);
     add(asmTokens, OpCode::NOP, str_toupper(name) + "_END");

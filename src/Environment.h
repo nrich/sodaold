@@ -54,7 +54,7 @@ struct Struct {
 struct Function {
     const std::string name;
     const std::vector<std::pair<std::string, VariableType>> params;
-    const VariableType returnType;
+    VariableType returnType;
 
     Function(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) : name(name), params(params), returnType(returnType) {
     }
@@ -107,8 +107,18 @@ class Environment {
 
         Function defineFunction(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) {
             auto function = Function(name, params, returnType);
-            functions.insert(std::make_pair(name, function));
+            functions.emplace(name, function);
             return function;
+        }
+
+        void updateStruct(const std::string &name, const Struct &_struct) {
+            structs.erase(name);
+            structs.emplace(name, _struct);
+        }
+
+        void updateFunction(const std::string &name, const Function &function) {
+            functions.erase(name);
+            functions.emplace(name, function);
         }
 
         Struct getStruct(const std::string &name) const {

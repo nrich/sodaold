@@ -179,6 +179,10 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     break;
+                case 'k':
+                    if (keyword == "keypressed") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                 case 'l':
                     if (keyword == "len") {
                         tokenType = TokenType::BUILTIN;
