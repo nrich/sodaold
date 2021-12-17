@@ -602,15 +602,14 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                     error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
 
                 auto param = function.params[argcount];
+                auto paramType = param.second;
 
-                if (param.second != Scalar && param.second != type) {
-                    auto expected = std::get<Struct>(param.second);
-
-                    if (type == Scalar) {
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name);
-                    } else {
-                        auto got = std::get<Struct>(type);
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + ", got " + got.name);
+                if (paramType != Scalar && paramType != type) {
+                    if (std::holds_alternative<Array>(paramType)) {
+                        error(std::string("Function `") + name + "': Expected array for parameter " + std::to_string(argcount));
+                    } else if (std::holds_alternative<Struct>(paramType)) {
+                        auto expected = std::get<Struct>(paramType);
+                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount));
                     }
                 }
 
@@ -628,15 +627,14 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                     error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount));
 
                 auto param = function.params[argcount];
+                auto paramType = param.second;
 
-                if (param.second != Scalar && param.second != type) {
-                    auto expected = std::get<Struct>(param.second);
-
-                    if (type == Scalar) {
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name);
-                    } else {
-                        auto got = std::get<Struct>(type);
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + ", got " + got.name);
+                if (paramType != Scalar && paramType != type) {
+                    if (std::holds_alternative<Array>(paramType)) {
+                        error(std::string("Function `") + name + "': Expected array for parameter " + std::to_string(argcount));
+                    } else if (std::holds_alternative<Struct>(paramType)) {
+                        auto expected = std::get<Struct>(paramType);
+                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount));
                     }
                 }
 
@@ -1905,14 +1903,53 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
         auto param = identifier(tokens[current++]);
         if (tokens[current].type == TokenType::COLON) {
             current++;
+
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
                 error(type_name + " does not name a struct");
 
             auto _struct = env->getStruct(type_name);
-
             params.push_back(std::make_pair(param, VariableType(_struct)));
+        } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+            current++;
+
+            std::stack<int> dimensions;
+            dimensions.push(0);
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+            while (tokens[current].type == TokenType::LEFT_BRACKET) {
+                current++;
+                check(tokens[current], TokenType::INTEGER, "integer expected");
+
+                auto dim = std::stoi(tokens[current++].str);
+                dimensions.push(dim);
+
+                check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+            }
+
+            VariableType type = Scalar;
+            if (tokens[current].type == TokenType::COLON) {
+                current++;
+                auto type_name = identifier(tokens[current++]);
+
+                if (!env->isStruct(type_name))
+                    error(type_name + " does not name a struct");
+
+                type = env->getStruct(type_name);
+            }
+
+            int offset = 1;
+            while (dimensions.size()) {
+                auto dim = dimensions.top();
+                type = Array(type, dim, offset);
+                dimensions.pop();
+                offset *= dim;
+            }
+
+            params.push_back(std::make_pair(param, type));
+
         } else {
             params.push_back(std::make_pair(param, Scalar));
         }

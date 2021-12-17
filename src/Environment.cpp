@@ -6,10 +6,16 @@ Array::Array(VariableType type, size_t length, size_t offset) : type(std::shared
 }
 
 bool Array::operator==(const Array &rhs) const {
+    if (!length || !rhs.length)
+        return *type == *rhs.type;
+
     return *type == *rhs.type && length == rhs.length;
 }
 
 bool Array::operator!=(const Array &rhs) const {
+    if (!length || !rhs.length)
+        return *type != *rhs.type;
+
     return *type != *rhs.type || length != rhs.length;
 }
 
