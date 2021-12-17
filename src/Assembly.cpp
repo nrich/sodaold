@@ -92,7 +92,7 @@ std::map<std::string, std::pair<OpCode, ArgType>> def = {
     {"CMP", {OpCode::CMP, ArgType::NONE}},
 
     {"SETIDX", {OpCode::SETIDX, ArgType::POINTER}},
-    {"MOVIDX", {OpCode::MOVIDX, ArgType::NONE}},
+    {"MOVIDX", {OpCode::MOVIDX, ArgType::VALUE}},
     {"LOADIDX", {OpCode::LOADIDX, ArgType::POINTER}},
     {"STOREIDX", {OpCode::STOREIDX, ArgType::VALUE}},
     {"INCIDX", {OpCode::INCIDX, ArgType::VALUE}},
