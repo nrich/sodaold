@@ -1018,7 +1018,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::ADD);
         add(asmTokens, OpCode::PUSHC);
 
-        if (array.getType() == Scalar) {
+        if (!std::holds_alternative<Array>(array.getType())) {
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::IDXC);
             add(asmTokens, OpCode::PUSHC);
@@ -1034,7 +1034,11 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
         auto _struct = std::get<Struct>(varType);
 
+std::cerr << _struct.name << std::endl;
+
         auto property = identifier(tokens[current++]);
+
+std::cerr << property << std::endl;
 
         auto offset = _struct.getOffset(property);
 
@@ -1179,9 +1183,19 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
         }
 
+        VariableType type = Scalar;
+        if (tokens[current].type == TokenType::COLON) {
+            current++;
+            auto type_name = identifier(tokens[current++]);
+
+            if (!env->isStruct(type_name))
+                error(type_name + " does not name a struct");
+
+            type = env->getStruct(type_name);
+        }
+
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
-        VariableType type = Scalar;
         int offset = 1;
         while (dimensions.size()) {
             auto dim = dimensions.top();
@@ -1728,6 +1742,9 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             if (type == None)
                 error(std::string("Cannot assign a void value to array"));
 
+            if (type != array.getStoredType())
+                error("Array type mismatch");
+
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
@@ -1776,7 +1793,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                     auto varType = _struct.getType(property);
                     auto property = identifier(tokens[current++]);
 
-                    if (varType == Scalar)
+                    if (!(std::holds_alternative<Struct>(varType)))
                         break;
 
                     _struct = std::get<Struct>(varType);
@@ -1791,6 +1808,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
                     add(asmTokens, OpCode::IDXC);
                 } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
+                    // TODO check for array
                     current++;
                     add(asmTokens, OpCode::PUSHIDX);
                     expression(cpu, asmTokens, tokens);

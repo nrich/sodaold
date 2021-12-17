@@ -17,6 +17,15 @@ VariableType Array::getType() const {
     return *type;
 }
 
+VariableType Array::getStoredType() const {
+    if (std::holds_alternative<Array>(*type)) {
+        auto array = std::get<Array>(*type);
+        return array.getStoredType();
+    }
+
+    return getType();
+}
+
 bool Struct::operator==(const Struct &rhs) const {
     return name == rhs.name;
 }

@@ -26,6 +26,7 @@ struct Array {
     bool operator!=(const Array &rhs) const;
 
     VariableType getType() const;
+    VariableType getStoredType() const;
 
     size_t size() const {
         return length;
