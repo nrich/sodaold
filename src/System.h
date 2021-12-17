@@ -21,6 +21,14 @@ enum class OpCode {
     STOREB,
     STOREC,
 
+    READA,
+    READB,
+    READC,
+
+    WRITEA,
+    WRITEB,
+    WRITEC,
+
     PUSHA,
     PUSHB,
     PUSHC,

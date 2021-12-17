@@ -23,6 +23,14 @@ std::map<std::string, std::pair<OpCode, ArgType>> def = {
     {"STOREB", {OpCode::STOREB, ArgType::POINTER}},
     {"STOREC", {OpCode::STOREC, ArgType::POINTER}},
 
+    {"READA", {OpCode::READA, ArgType::VALUE}},
+    {"READB", {OpCode::READB, ArgType::VALUE}},
+    {"READC", {OpCode::READC, ArgType::VALUE}},
+
+    {"WRITEA", {OpCode::WRITEA, ArgType::VALUE}},
+    {"WRITEB", {OpCode::WRITEB, ArgType::VALUE}},
+    {"WRITEC", {OpCode::WRITEC, ArgType::VALUE}},
+
     {"PUSHA", {OpCode::PUSHA, ArgType::NONE}},
     {"PUSHB", {OpCode::PUSHB, ArgType::NONE}},
     {"PUSHC", {OpCode::PUSHC, ArgType::NONE}},
