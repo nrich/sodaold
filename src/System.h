@@ -90,6 +90,7 @@ enum class OpCode {
     CMP,
 
     SETIDX,
+    MOVIDX,
     LOADIDX,
     STOREIDX,
     INCIDX,
