@@ -1435,6 +1435,336 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             //return type;
         }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::PLUS_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::ADD);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::ADD);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::MINUS_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::SUB);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::SUB);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::STAR_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::MUL);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::MUL);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::SLASH_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::DIV);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::DIV);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::PERCENT_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::MOD);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::MOD);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::BACKSLASH_ASSIGN) {
+       auto varname = tokens[current].str;
+
+        if (env->isFunction(varname)) {
+            error("Cannot reassign function");
+        } else if (env->isStruct(varname)) {
+            error("Cannot reassign struct");
+        } else if (env->isGlobal(varname)) {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            addPointer(asmTokens, OpCode::LOADA, env->get(varname));
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::IDIV);
+
+            addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+        } else {
+            current += 2;
+
+            auto type = expression(cpu, asmTokens, tokens);
+
+            if (type == None)
+                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->get(varname)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->get(varname)));
+            }
+            add(asmTokens, OpCode::IDXA);
+            add(asmTokens, OpCode::POPIDX);
+
+            add(asmTokens, OpCode::POPB);
+
+            add(asmTokens, OpCode::IDIV);
+
+            add(asmTokens, OpCode::PUSHIDX);
+            addPointer(asmTokens, OpCode::LOADIDX, env->get(FRAME_INDEX));
+
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(env->set(varname, type)));
+            } else {
+                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(env->set(varname, type)));
+            }
+
+            add(asmTokens, OpCode::WRITECX);
+            add(asmTokens, OpCode::POPIDX);
+        }
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::LEFT_BRACKET) {
         auto varname = tokens[current].str;
 

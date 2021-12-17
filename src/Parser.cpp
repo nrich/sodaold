@@ -334,6 +334,10 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::DECREMENT, line, pos, "--"));
                             i++;
                             break;
+                        case '=':
+                            tokens.push_back(Token(TokenType::MINUS_ASSIGN, line, pos, "-="));
+                            i++;
+                            break;
                         default:
                             tokens.push_back(Token(TokenType::MINUS, line, pos, "-", Precedence::TERM));
                     }
@@ -344,24 +348,56 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::INCREMENT, line, pos, "++"));
                             i++;
                             break;
+                        case '=':
+                            tokens.push_back(Token(TokenType::PLUS_ASSIGN, line, pos, "+="));
+                            i++;
+                            break;
                         default:
                             tokens.push_back(Token(TokenType::PLUS, line, pos, "+", Precedence::TERM));
                     }
                     break;
                 case '/':
-                    tokens.push_back(Token(TokenType::SLASH, line, pos, "/", Precedence::FACTOR));
+                    switch (source[i]) {
+                        case '=':
+                            tokens.push_back(Token(TokenType::SLASH_ASSIGN, line, pos, "/="));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::SLASH, line, pos, "/", Precedence::FACTOR));
+                    }
                     break;
                 case '*':
-                    tokens.push_back(Token(TokenType::STAR, line, pos, "*", Precedence::FACTOR));
+                    switch (source[i]) {
+                        case '=':
+                            tokens.push_back(Token(TokenType::STAR_ASSIGN, line, pos, "*="));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::STAR, line, pos, "*", Precedence::FACTOR));
+                    }
                     break;
                 case '^':
                     tokens.push_back(Token(TokenType::CARAT, line, pos, "^", Precedence::FACTOR));
                     break;
                 case '\\':
-                    tokens.push_back(Token(TokenType::BACKSLASH, line, pos, "\\", Precedence::FACTOR));
+                    switch (source[i]) {
+                        case '=':
+                            tokens.push_back(Token(TokenType::BACKSLASH_ASSIGN, line, pos, "\\="));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::BACKSLASH, line, pos, "\\", Precedence::FACTOR));
+                    }
                     break;
                 case '%':
-                    tokens.push_back(Token(TokenType::PERCENT, line, pos, "%", Precedence::FACTOR));
+                    switch (source[i]) {
+                        case '=':
+                            tokens.push_back(Token(TokenType::PERCENT_ASSIGN, line, pos, "%="));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::PERCENT, line, pos, "%", Precedence::FACTOR));
+                    }
                     break;
                 case ';':
                     tokens.push_back(Token(TokenType::SEMICOLON, line, pos, ";"));

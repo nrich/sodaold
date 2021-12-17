@@ -54,6 +54,13 @@ enum class TokenType {
     BACKSLASH,
     PERCENT,
 
+    PLUS_ASSIGN,
+    MINUS_ASSIGN,
+    STAR_ASSIGN,
+    SLASH_ASSIGN,
+    BACKSLASH_ASSIGN,
+    PERCENT_ASSIGN,
+
     QUESTION_MARK,
     AMPERSAND, 
     DOLLAR,
