@@ -1034,11 +1034,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
         auto _struct = std::get<Struct>(varType);
 
-std::cerr << _struct.name << std::endl;
-
         auto property = identifier(tokens[current++]);
-
-std::cerr << property << std::endl;
 
         auto offset = _struct.getOffset(property);
 
