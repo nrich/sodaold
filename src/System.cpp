@@ -13,6 +13,12 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::STOREA: return "STOREA";
         case OpCode::STOREB: return "STOREB";
         case OpCode::STOREC: return "STOREC";
+        case OpCode::READA: return "READA";
+        case OpCode::READB: return "READB";
+        case OpCode::READC: return "READC";
+        case OpCode::WRITEA: return "WRITEA";
+        case OpCode::WRITEB: return "WRITEB";
+        case OpCode::WRITEC: return "WRITEC";
         case OpCode::PUSHA: return "PUSHA";
         case OpCode::PUSHB: return "PUSHB";
         case OpCode::PUSHC: return "PUSHC";
@@ -62,6 +68,7 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::LE: return "LE";
         case OpCode::CMP: return "CMP";
         case OpCode::SETIDX: return "SETIDX";
+        case OpCode::MOVIDX: return "MOVIDX";
         case OpCode::LOADIDX: return "LOADIDX";
         case OpCode::STOREIDX: return "STOREIDX";
         case OpCode::INCIDX: return "INCIDX";
