@@ -1398,7 +1398,7 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
         auto offset = _struct.getOffset(property);
         auto subType = _struct.getType(property);
 
-        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPIDX);
 
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
@@ -1407,6 +1407,8 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
         }
 
         add(asmTokens, OpCode::IDXC);
+
+        add(asmTokens, OpCode::PUSHC);
 
         if (tokens[current].type != TokenType::ASSIGN) {
             return parseIndexStatement(cpu, asmTokens, tokens, subType);
@@ -1730,15 +1732,15 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             if (env->isGlobal(varname)) {
                 addPointer(asmTokens, OpCode::LOADC, env->get(varname));
-                add(asmTokens, OpCode::PUSHC);
             } else {
                 if (cpu == 16) {
                     addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(varname)));
                 } else {
                     addValue32(asmTokens, OpCode::READC, Int32AsValue(env->get(varname)));
                 }
-                add(asmTokens, OpCode::PUSHC);
             }
+
+            add(asmTokens, OpCode::PUSHC);
 
             auto ltype = parseIndexStatement(cpu, asmTokens, tokens, varType);
 
@@ -1768,15 +1770,15 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             if (env->isGlobal(varname)) {
                 addPointer(asmTokens, OpCode::LOADC, env->get(varname));
-                add(asmTokens, OpCode::PUSHC);
             } else {
                 if (cpu == 16) {
                     addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(varname)));
                 } else {
                     addValue32(asmTokens, OpCode::READC, Int32AsValue(env->get(varname)));
                 }
-                add(asmTokens, OpCode::PUSHC);
             }
+
+            add(asmTokens, OpCode::PUSHC);
 
             auto ltype = parseIndexStatement(cpu, asmTokens, tokens, varType); 
 
@@ -1789,6 +1791,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                 error("Cannot assign a void value to property");
 
             add(asmTokens, OpCode::POPC);
+            add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
         }
     } else {
