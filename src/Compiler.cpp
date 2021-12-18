@@ -1381,6 +1381,9 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
         check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
         if (tokens[current].type != TokenType::ASSIGN) {
+            add(asmTokens, OpCode::POPIDX);
+            add(asmTokens, OpCode::IDXC);
+            add(asmTokens, OpCode::PUSHC);
             return parseIndexStatement(cpu, asmTokens, tokens, subType);
         }
 
@@ -1406,14 +1409,13 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
             addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
         }
 
-        add(asmTokens, OpCode::IDXC);
-
-        add(asmTokens, OpCode::PUSHC);
-
         if (tokens[current].type != TokenType::ASSIGN) {
+            add(asmTokens, OpCode::IDXC);
+            add(asmTokens, OpCode::PUSHC);
             return parseIndexStatement(cpu, asmTokens, tokens, subType);
         }
 
+        add(asmTokens, OpCode::PUSHIDX);
         return subType;
     }
 
