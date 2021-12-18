@@ -24,6 +24,17 @@ VariableType Array::getType() const {
     return *type;
 }
 
+size_t Array::size() const {
+    if (std::holds_alternative<Array>(*type)) {
+        auto array = std::get<Array>(*type);
+
+        return array.size() * length;
+    } else {
+        return length;
+    }
+}
+
+
 VariableType Array::getStoredType() const {
     if (std::holds_alternative<Array>(*type)) {
         auto array = std::get<Array>(*type);

@@ -791,7 +791,7 @@ static Array parseArray(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
 
         check(tokens[current], TokenType::RIGHT_BRACKET, "`]' expected");
 
-        return Array(array, length*array.length, array.offset*array.length);
+        return Array(array, length, array.offset*array.length);
     } else {
         auto type = expression(cpu, asmTokens, tokens, 0);
         int length = 1;
@@ -920,15 +920,15 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
     } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
         auto array = parseArray(cpu, asmTokens, tokens);
 
-        addShort(asmTokens, OpCode::ALLOC, array.length);
+        addShort(asmTokens, OpCode::ALLOC, array.size());
 
         if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(array.length));
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(array.size()));
         } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(array.length));
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(array.size()));
         }
 
-        for (size_t i = 0; i < array.length; i++) {
+        for (size_t i = 0; i < array.size(); i++) {
             if (cpu == 16) {
                 addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(-1));
             } else {
@@ -1348,6 +1348,14 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     add(asmTokens, OpCode::JMP, "FOR_" + std::to_string(_for) + "_POST");
 
     add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_FALSE");
+}
+
+static VariableType parseIndexStatment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    if (tokens[current].type == TokenType::LEFT_BRACKET) {
+    } else if (tokens[current].type == TokenType::ACCESSOR) {
+    } 
+
+    return None;
 }
 
 static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
@@ -1804,17 +1812,57 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
                     add(asmTokens, OpCode::IDXC);
                 } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
-                    // TODO check for array
-                    current++;
-                    add(asmTokens, OpCode::PUSHIDX);
+                    auto varType = _struct.getType(property);
+
+                    if (!(std::holds_alternative<Array>(varType)))
+                        error("Array expected for property " + property);
+
+                    auto array = std::get<Array>(varType); 
+
                     expression(cpu, asmTokens, tokens);
+
+                    if (cpu == 16) {
+                        addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
+                    } else {
+                        addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
+                    }
+
+                    add(asmTokens, OpCode::POPA);
+                    add(asmTokens, OpCode::MUL);
+                    add(asmTokens, OpCode::PUSHC);
+
                     check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
-                    add(asmTokens, OpCode::POPB);
-                    add(asmTokens, OpCode::POPA);
-                    add(asmTokens, OpCode::ADD);
-                    add(asmTokens, OpCode::PUSHC);
-                    add(asmTokens, OpCode::POPIDX);
+                    while (tokens[current].type == TokenType::LEFT_BRACKET) {
+                        current++;
+
+                        varType = array.getType();
+
+                        if (!std::holds_alternative<Array>(varType))
+                            error("Array expected");
+
+                        array = std::get<Array>(varType);
+
+                        expression(cpu, asmTokens, tokens);
+
+                        if (cpu == 16) {
+                            addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
+                        } else {
+                            addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
+                        }
+
+                        add(asmTokens, OpCode::POPA);
+                        add(asmTokens, OpCode::MUL);
+                        add(asmTokens, OpCode::PUSHC);
+
+                        add(asmTokens, OpCode::POPB);
+                        add(asmTokens, OpCode::POPA);
+                        add(asmTokens, OpCode::ADD);
+
+                        add(asmTokens, OpCode::PUSHC);
+
+                        check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+                    }
                 } else {
                     error("Index operator expected");
                 }

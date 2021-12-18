@@ -28,9 +28,7 @@ struct Array {
     VariableType getType() const;
     VariableType getStoredType() const;
 
-    size_t size() const {
-        return length;
-    }
+    size_t size() const;
 };
 
 struct Struct {
