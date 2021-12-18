@@ -280,4 +280,6 @@ class Environment {
         }
 };
 
+std::string VariableTypeToString(VariableType type);
+
 #endif //__ENVIRONMENT_H__

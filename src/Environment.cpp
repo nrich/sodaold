@@ -1,4 +1,5 @@
 #include <vector>
+#include <sstream>
 
 #include "Environment.h"
 
@@ -62,3 +63,48 @@ uint32_t Struct::getOffset(const std::string &slot) const {
     return 0;
 }
 
+std::string VariableTypeToString(VariableType type) {
+    if (std::holds_alternative<Array>(type)) {
+        std::ostringstream s;
+
+        auto array = std::get<Array>(type);
+
+        s << "[";
+
+        s << array.length;
+
+        auto type_name = VariableTypeToString(*array.type);
+
+        if (type_name != "Scalar") {
+            s << ":" << type_name;
+        }
+
+        s << "]";
+
+        return s.str();
+    } else if (std::holds_alternative<Struct>(type)) {
+        std::ostringstream s;
+
+        auto _struct = std::get<Struct>(type);
+
+        s << "struct " << _struct.name << "{";
+
+        for (auto slot : _struct.slots) {
+            s << "slot " << slot.first;
+
+            auto type_name = VariableTypeToString(slot.second);
+
+            if (type_name != "Scalar") {
+                s << ": " << type_name;
+            }
+
+            s << ";";
+        }
+
+        s << "}";
+
+        return s.str();
+    } else {
+        return "Scalar";
+    }
+}
