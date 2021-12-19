@@ -647,7 +647,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                 error(std::string("Function `") + name + "' expected " + std::to_string(function.params.size()) + " arguments, got " + std::to_string(argcount));
             }
 
-            add(asmTokens, OpCode::CALL, str_toupper(name));
+            add(asmTokens, OpCode::CALL, name);
 
             return function.returnType;
         } else if (env->isStruct(token.str)) {
@@ -748,6 +748,25 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             addPointer(asmTokens, OpCode::LOADC, env->get(token.str));
             add(asmTokens, OpCode::PUSHC);
+
+            if (tokens[current+1].type == TokenType::DECREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+                }
+                addPointer(asmTokens, OpCode::STOREC, env->get(token.str));
+            } else if (tokens[current+1].type == TokenType::INCREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+                }
+                addPointer(asmTokens, OpCode::STOREC, env->get(token.str));
+            }
+
             return type;
         } else {
             auto type = env->getType(token.str);
@@ -762,6 +781,27 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             }
 
             add(asmTokens, OpCode::PUSHC);
+
+            if (tokens[current+1].type == TokenType::DECREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+                    addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+                    addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(token.str)));
+                }
+            } else if (tokens[current+1].type == TokenType::INCREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                    addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+                    addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(token.str)));
+                }
+            }
+
             return type;
         }
     } else {
@@ -1825,8 +1865,8 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     auto function = env->defineFunction(name, params, Undefined);
 
-    add(asmTokens, OpCode::JMP, str_toupper(name) + "_END");
-    add(asmTokens, OpCode::NOP, str_toupper(name));
+    add(asmTokens, OpCode::JMP, name + "_END");
+    add(asmTokens, OpCode::NOP, name);
     env = env->beginScope(name, env);
 
     auto rargs = params;
@@ -1893,7 +1933,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     env->updateFunction(name, function);
 
     add(asmTokens, OpCode::RETURN);
-    add(asmTokens, OpCode::NOP, str_toupper(name) + "_END");
+    add(asmTokens, OpCode::NOP, name + "_END");
 }
 
 static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
