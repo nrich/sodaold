@@ -1623,7 +1623,6 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             } else {
                 addValue32(asmTokens, OpCode::READA, Int32AsValue(env->get(varname)));
             }
-            add(asmTokens, OpCode::IDXA);
 
             add(asmTokens, OpCode::POPB);
 
