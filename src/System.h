@@ -61,6 +61,12 @@ enum class OpCode {
     MOD,
     EXP,
 
+    LSHIFT,
+    RSHIFT,
+    BAND,
+    BOR,
+    XOR,
+
     ATAN,
     COS,
     LOG,

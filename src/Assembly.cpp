@@ -63,6 +63,12 @@ std::map<std::string, std::pair<OpCode, ArgType>> def = {
     {"MOD", {OpCode::MOD, ArgType::NONE}},
     {"EXP", {OpCode::EXP, ArgType::NONE}},
 
+    {"LSHIFT", {OpCode::LSHIFT, ArgType::NONE}},
+    {"RSHIFT", {OpCode::RSHIFT, ArgType::NONE}},
+    {"BAND", {OpCode::BAND, ArgType::NONE}},
+    {"BOR", {OpCode::BOR, ArgType::NONE}},
+    {"XOR", {OpCode::XOR, ArgType::NONE}},
+
     {"ATAN", {OpCode::ATAN, ArgType::NONE}},
     {"COS", {OpCode::COS, ArgType::NONE}},
     {"LOG", {OpCode::LOG, ArgType::NONE}},

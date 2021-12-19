@@ -475,6 +475,10 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::GREATER_EQUAL, line, pos, ">=", Precedence::COMPARISON));
                             i++;
                             break;
+                        case '>':
+                            tokens.push_back(Token(TokenType::RIGHT_SHIFT, line, pos, ">>", Precedence::FACTOR));
+                            i++;
+                            break;
                         default:
                             tokens.push_back(Token(TokenType::GREATER, line, pos, ">", Precedence::COMPARISON));
                     }
@@ -483,6 +487,10 @@ std::vector<Token> parse(const std::string &source) {
                     switch (source[i]) {
                         case '=':
                             tokens.push_back(Token(TokenType::LESS_EQUAL, line, pos, "<=", Precedence::COMPARISON));
+                            i++;
+                            break;
+                        case '<':
+                            tokens.push_back(Token(TokenType::LEFT_SHIFT, line, pos, "<<", Precedence::FACTOR));
                             i++;
                             break;
                         default:

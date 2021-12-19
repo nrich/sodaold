@@ -42,6 +42,9 @@ enum class TokenType {
     INCREMENT,
     DECREMENT,
 
+    LEFT_SHIFT,
+    RIGHT_SHIFT,
+
     AND,
     OR,
     NOT,
