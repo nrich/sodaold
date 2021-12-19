@@ -44,6 +44,9 @@ enum class TokenType {
 
     LEFT_SHIFT,
     RIGHT_SHIFT,
+    AMPERSAND,
+    PIPE,
+    CARAT,
 
     AND,
     OR,
@@ -53,7 +56,6 @@ enum class TokenType {
     MINUS,
     STAR,
     SLASH,
-    CARAT,
     BACKSLASH,
     PERCENT,
 
@@ -64,12 +66,16 @@ enum class TokenType {
     BACKSLASH_ASSIGN,
     PERCENT_ASSIGN,
 
+    LEFT_SHIFT_ASSIGN,
+    RIGHT_SHIFT_ASSIGN,
+    AMPERSAND_ASSIGN,
+    PIPE_ASSIGN,
+    CARAT_ASSIGN,
+
     QUESTION_MARK,
-    AMPERSAND, 
     DOLLAR,
     TILDE, 
     AT, 
-    PIPE,
     BACKTICK,
 
     LEFT_PAREN,

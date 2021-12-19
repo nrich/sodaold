@@ -824,6 +824,13 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         add(asmTokens, OpCode::NOT);
         add(asmTokens, OpCode::PUSHC);
         return type;
+    } else if (tokens[current].type == TokenType::TILDE) {
+        current++;
+        auto type = prefix(cpu, asmTokens, tokens, rbp);
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::BNOT);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
     } else if (tokens[current].type == TokenType::SIZEOF) {
         current++;
         auto name = tokens[current].str;
@@ -990,6 +997,41 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::IDIV);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::LEFT_SHIFT) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::LSHIFT);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::RIGHT_SHIFT) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::RSHIFT);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::AMPERSAND) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::BAND);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::PIPE) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::BOR);
+        add(asmTokens, OpCode::PUSHC);
+        return type;
+    } else if (token.type == TokenType::CARAT) {
+        auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::XOR);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::LEFT_BRACKET) {
@@ -1442,7 +1484,7 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
         addPointer(asmTokens, OpCode::LOADA, env->get(varname));
         add(asmTokens, OpCode::POPB);
 
-        add(asmTokens, OpCode::SUB);
+        add(asmTokens, opcode);
 
         addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
     } else {
@@ -1514,6 +1556,16 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         assign_op_statement(cpu, asmTokens, tokens, OpCode::MOD);
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::BACKSLASH_ASSIGN) {
         assign_op_statement(cpu, asmTokens, tokens, OpCode::IDIV);
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::LEFT_SHIFT_ASSIGN) {
+        assign_op_statement(cpu, asmTokens, tokens, OpCode::LSHIFT);
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::RIGHT_SHIFT_ASSIGN) {
+        assign_op_statement(cpu, asmTokens, tokens, OpCode::RSHIFT);
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::AMPERSAND_ASSIGN) {
+        assign_op_statement(cpu, asmTokens, tokens, OpCode::BAND);
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::PIPE_ASSIGN) {
+        assign_op_statement(cpu, asmTokens, tokens, OpCode::BOR);
+    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::CARAT_ASSIGN) {
+        assign_op_statement(cpu, asmTokens, tokens, OpCode::XOR);
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::LEFT_BRACKET) {
         auto varname = tokens[current++].str;
 

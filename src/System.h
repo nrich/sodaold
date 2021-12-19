@@ -63,6 +63,7 @@ enum class OpCode {
 
     LSHIFT,
     RSHIFT,
+    BNOT,
     BAND,
     BOR,
     XOR,

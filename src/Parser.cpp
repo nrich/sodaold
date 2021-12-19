@@ -377,7 +377,14 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case '^':
-                    tokens.push_back(Token(TokenType::CARAT, line, pos, "^", Precedence::FACTOR));
+                    switch (source[i]) {
+                        case '=':
+                            tokens.push_back(Token(TokenType::CARAT_ASSIGN, line, pos, "^="));
+                            i++;
+                            break;
+                        default:
+                            tokens.push_back(Token(TokenType::CARAT, line, pos, "^", Precedence::TERM));
+                    }
                     break;
                 case '\\':
                     switch (source[i]) {
@@ -423,8 +430,13 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::AND, line, pos, "&&", Precedence::AND));
                             i++;
                             break;
+                        case '=':
+                            tokens.push_back(Token(TokenType::AMPERSAND_ASSIGN, line, pos, "&="));
+                            i++;
+                            break;
+
                         default:
-                            tokens.push_back(Token(TokenType::AMPERSAND, line, pos, "&"));
+                            tokens.push_back(Token(TokenType::AMPERSAND, line, pos, "&", Precedence::TERM));
                     }
                     break;
                 case '$':
@@ -442,8 +454,12 @@ std::vector<Token> parse(const std::string &source) {
                             tokens.push_back(Token(TokenType::OR, line, pos, "||", Precedence::OR));
                             i++;
                             break;
+                        case '=':
+                            tokens.push_back(Token(TokenType::PIPE_ASSIGN, line, pos, "|="));
+                            i++;
+                            break;
                         default:
-                            tokens.push_back(Token(TokenType::PIPE, line, pos, "|"));
+                            tokens.push_back(Token(TokenType::PIPE, line, pos, "|", Precedence::TERM));
                     }
                     break;
                 case '`':
@@ -476,7 +492,14 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '>':
-                            tokens.push_back(Token(TokenType::RIGHT_SHIFT, line, pos, ">>", Precedence::FACTOR));
+                            switch (source[i+1]) {
+                                case '=':
+                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT_ASSIGN, line, pos, ">>="));
+                                    i++;
+                                    break;
+                                default:
+                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT, line, pos, ">>", Precedence::FACTOR));
+                            }
                             i++;
                             break;
                         default:
@@ -490,7 +513,14 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '<':
-                            tokens.push_back(Token(TokenType::LEFT_SHIFT, line, pos, "<<", Precedence::FACTOR));
+                            switch (source[i+1]) {
+                                case '=':
+                                    tokens.push_back(Token(TokenType::LEFT_SHIFT_ASSIGN, line, pos, "<<="));
+                                    i++;
+                                    break;
+                                default:
+                                    tokens.push_back(Token(TokenType::LEFT_SHIFT, line, pos, "<<", Precedence::FACTOR));
+                            }
                             i++;
                             break;
                         default:

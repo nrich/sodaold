@@ -46,6 +46,7 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::EXP: return "EXP";
         case OpCode::LSHIFT: return "LSHIFT";
         case OpCode::RSHIFT: return "RSHIFT";
+        case OpCode::BNOT: return "BNOT";
         case OpCode::BAND: return "BAND";
         case OpCode::BOR: return "BOR";
         case OpCode::XOR: return "XOR";
