@@ -335,7 +335,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::MINUS_ASSIGN, line, pos, "-="));
+                            tokens.push_back(Token(TokenType::MINUS_ASSIGN, line, pos, "-=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -349,7 +349,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::PLUS_ASSIGN, line, pos, "+="));
+                            tokens.push_back(Token(TokenType::PLUS_ASSIGN, line, pos, "+=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -359,7 +359,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '/':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::SLASH_ASSIGN, line, pos, "/="));
+                            tokens.push_back(Token(TokenType::SLASH_ASSIGN, line, pos, "/=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -369,7 +369,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '*':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::STAR_ASSIGN, line, pos, "*="));
+                            tokens.push_back(Token(TokenType::STAR_ASSIGN, line, pos, "*=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -379,7 +379,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '^':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::CARAT_ASSIGN, line, pos, "^="));
+                            tokens.push_back(Token(TokenType::CARAT_ASSIGN, line, pos, "^=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -389,7 +389,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '\\':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::BACKSLASH_ASSIGN, line, pos, "\\="));
+                            tokens.push_back(Token(TokenType::BACKSLASH_ASSIGN, line, pos, "\\=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -399,7 +399,7 @@ std::vector<Token> parse(const std::string &source) {
                 case '%':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::PERCENT_ASSIGN, line, pos, "%="));
+                            tokens.push_back(Token(TokenType::PERCENT_ASSIGN, line, pos, "%=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -431,7 +431,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::AMPERSAND_ASSIGN, line, pos, "&="));
+                            tokens.push_back(Token(TokenType::AMPERSAND_ASSIGN, line, pos, "&=", Precedence::ASSIGNMENT));
                             i++;
                             break;
 
@@ -455,7 +455,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::PIPE_ASSIGN, line, pos, "|="));
+                            tokens.push_back(Token(TokenType::PIPE_ASSIGN, line, pos, "|=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
@@ -472,7 +472,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::ASSIGN, line, pos, "="));
+                            tokens.push_back(Token(TokenType::ASSIGN, line, pos, "=", Precedence::ASSIGNMENT));
                     }
                     break;
                 case '!':
@@ -494,7 +494,7 @@ std::vector<Token> parse(const std::string &source) {
                         case '>':
                             switch (source[i+1]) {
                                 case '=':
-                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT_ASSIGN, line, pos, ">>="));
+                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT_ASSIGN, line, pos, ">>=", Precedence::ASSIGNMENT));
                                     i++;
                                     break;
                                 default:
@@ -515,7 +515,7 @@ std::vector<Token> parse(const std::string &source) {
                         case '<':
                             switch (source[i+1]) {
                                 case '=':
-                                    tokens.push_back(Token(TokenType::LEFT_SHIFT_ASSIGN, line, pos, "<<="));
+                                    tokens.push_back(Token(TokenType::LEFT_SHIFT_ASSIGN, line, pos, "<<=", Precedence::ASSIGNMENT));
                                     i++;
                                     break;
                                 default:
