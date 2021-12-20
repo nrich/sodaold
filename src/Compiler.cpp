@@ -1589,6 +1589,18 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
     }
 }
 
+static void assign_op_composite_statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, OpCode opcode) {
+    current++;
+    add(asmTokens, OpCode::POPIDX);
+    add(asmTokens, OpCode::IDXA);
+    auto type = expression(cpu, asmTokens, tokens);
+
+    add(asmTokens, OpCode::POPB);
+    add(asmTokens, opcode);
+    add(asmTokens, OpCode::WRITECX);
+}
+
+
 static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::ASSIGN) {
        auto varname = tokens[current].str; 
@@ -1686,6 +1698,28 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                     addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
                 }
                 add(asmTokens, OpCode::WRITECX);
+            } else if (tokens[current].type == TokenType::PLUS_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::ADD);
+            } else if (tokens[current].type == TokenType::MINUS_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::SUB);
+            } else if (tokens[current].type == TokenType::STAR_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::MUL);
+            } else if (tokens[current].type == TokenType::SLASH_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::DIV);
+            } else if (tokens[current].type == TokenType::BACKSLASH_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::IDIV);
+            } else if (tokens[current].type == TokenType::PERCENT_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::MOD);
+            } else if (tokens[current].type == TokenType::LEFT_SHIFT_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::LSHIFT);
+            } else if (tokens[current].type == TokenType::RIGHT_SHIFT_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::RSHIFT);
+            } else if (tokens[current].type == TokenType::AMPERSAND_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::BAND);
+            } else if (tokens[current].type == TokenType::PIPE_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::BOR);
+            } else if (tokens[current].type == TokenType::CARAT_ASSIGN) {
+                assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::XOR);
             } else {
                 check(tokens[current++], TokenType::ASSIGN, "`=' expected");
 
