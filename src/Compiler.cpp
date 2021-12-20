@@ -2016,9 +2016,13 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
 
         std::stack<int> dimensions;
 
-        check(tokens[current], TokenType::INTEGER, "integer expected");
-        auto dim = std::stoi(tokens[current++].str);
-        dimensions.push(dim);
+        if (tokens[current].type == TokenType::RIGHT_BRACKET) {
+            dimensions.push(0);
+        } else {
+            check(tokens[current], TokenType::INTEGER, "integer expected");
+            auto dim = std::stoi(tokens[current++].str);
+            dimensions.push(dim);
+        }
 
         check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
@@ -2072,10 +2076,13 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
             current++;
 
             std::stack<int> dimensions;
-
-            check(tokens[current], TokenType::INTEGER, "integer expected");
-            auto dim = std::stoi(tokens[current++].str);
-            dimensions.push(dim);
+            if (tokens[current].type == TokenType::RIGHT_BRACKET) {
+                dimensions.push(0);
+            } else {
+                check(tokens[current], TokenType::INTEGER, "integer expected");
+                auto dim = std::stoi(tokens[current++].str);
+                dimensions.push(dim);
+            }
 
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
