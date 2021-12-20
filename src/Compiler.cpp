@@ -1104,6 +1104,24 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::IDXC);
             add(asmTokens, OpCode::PUSHC);
+
+            if (tokens[current].type == TokenType::DECREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+                }
+                add(asmTokens, OpCode::WRITECX);
+            } else if (tokens[current].type == TokenType::INCREMENT) {
+                current++;
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+                }
+                add(asmTokens, OpCode::WRITECX);
+            }
         }
 
         return array.getType();
@@ -1130,6 +1148,24 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
         add(asmTokens, OpCode::IDXC);
         add(asmTokens, OpCode::PUSHC);
+
+        if (tokens[current].type == TokenType::DECREMENT) {
+            current++;
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+            } else {
+                addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+            }
+            add(asmTokens, OpCode::WRITECX);
+        } else if (tokens[current].type == TokenType::INCREMENT) {
+            current++;
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+            } else {
+                addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+            }
+            add(asmTokens, OpCode::WRITECX);
+        }
 
         return _struct.getType(property);
     } else if (token.type == TokenType::EQUAL) {
