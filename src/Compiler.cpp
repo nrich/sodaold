@@ -1606,7 +1606,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         assign_op_statement(cpu, asmTokens, tokens, OpCode::BOR);
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::CARAT_ASSIGN) {
         assign_op_statement(cpu, asmTokens, tokens, OpCode::XOR);
-    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::LEFT_BRACKET) {
+    } else if (tokens[current].type == TokenType::IDENTIFIER && (tokens[current+1].type == TokenType::LEFT_BRACKET || tokens[current+1].type == TokenType::ACCESSOR)) {
         auto varname = tokens[current++].str;
 
         if (env->isFunction(varname)) {
@@ -1630,55 +1630,41 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             auto ltype = parseIndexStatement(cpu, asmTokens, tokens, varType);
 
-            check(tokens[current++], TokenType::ASSIGN, "`=' expected!");
-
-            auto type = expression(cpu, asmTokens, tokens);
-
-            if (type == None)
-                error(std::string("Cannot assign a void value to array"));
-
-            if (type != ltype)
-                error("Array type mismatch");
-
-            add(asmTokens, OpCode::POPC);
-            add(asmTokens, OpCode::POPIDX);
-            add(asmTokens, OpCode::WRITECX);
-        }
-    } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::ACCESSOR) {
-        auto varname = tokens[current++].str;
-
-        if (env->isFunction(varname)) {
-            error("Cannot index function");
-        } else if (env->isStruct(varname)) {
-            error("Cannot index struct type");
-        } else {
-            auto varType = env->getType(varname);
-
-            if (env->isGlobal(varname)) {
-                addPointer(asmTokens, OpCode::LOADC, env->get(varname));
-            } else {
+            if (tokens[current].type == TokenType::DECREMENT) {
+                current++;
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::IDXC);
                 if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(varname)));
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
                 } else {
-                    addValue32(asmTokens, OpCode::READC, Int32AsValue(env->get(varname)));
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
                 }
+                add(asmTokens, OpCode::WRITECX);
+            } else if (tokens[current].type == TokenType::INCREMENT) {
+                current++;
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::IDXC);
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+                }
+                add(asmTokens, OpCode::WRITECX);
+            } else {
+                check(tokens[current++], TokenType::ASSIGN, "`=' expected");
+
+                auto type = expression(cpu, asmTokens, tokens);
+
+                if (type == None)
+                    error(std::string("Cannot assign a void value"));
+
+                if (type != ltype)
+                    error("Type mismatch");
+
+                add(asmTokens, OpCode::POPC);
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::WRITECX);
             }
-
-            add(asmTokens, OpCode::PUSHC);
-
-            auto ltype = parseIndexStatement(cpu, asmTokens, tokens, varType); 
-
-            check(tokens[current++], TokenType::ASSIGN, "`=' expected");
-
-            auto type = expression(cpu, asmTokens, tokens);
-            //check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
-
-            if (type == None)
-                error("Cannot assign a void value to property");
-
-            add(asmTokens, OpCode::POPC);
-            add(asmTokens, OpCode::POPIDX);
-            add(asmTokens, OpCode::WRITECX);
         }
     } else {
         auto type = expression(cpu, asmTokens, tokens);
