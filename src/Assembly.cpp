@@ -149,6 +149,8 @@ static std::pair<std::string, std::string> getSysCall(SysCall syscall, RuntimeVa
         syscallname = "PALETTE";
     } else if (syscall == SysCall::COLOUR) {
         syscallname = "COLOUR";
+    } else if (syscall == SysCall::CURSOR) {
+        syscallname = "CURSOR";
     } else if (syscall == SysCall::DRAW) {
         syscallname = "DRAW";
     } else if (syscall == SysCall::DRAWLINE) {

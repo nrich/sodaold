@@ -216,6 +216,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 's':
+                    if (keyword == "setcursor") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "setpalette") {
                         tokenType = TokenType::BUILTIN;
                     }

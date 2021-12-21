@@ -1,0 +1,52 @@
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <windows.h>
+
+#pragma code_page(65001)
+
+#ifdef _DEBUG
+    #define VER_FILEFLAGS   VS_FF_DEBUG
+#else
+    #define VER_FILEFLAGS   0x0L
+#endif
+
+#define VERSION_STR "0.0.1"
+
+#ifdef _WIN64
+    #define VER_FILEDESCRIPTION_STR     "Soda (64-bit)"
+    #define VER_ORIGINALFILENAME_STR    "soda64.exe"
+#else
+    #define VER_FILEDESCRIPTION_STR     "Soda compiler"
+    #define VER_ORIGINALFILENAME_STR    "soda.exe"
+#endif
+
+#define PRODUCT_NAME "Soda compiler"
+#define INTERNAL_NAME "soda"
+
+1 VERSIONINFO
+FILEVERSION     0,0,1,0
+PRODUCTVERSION  0,0,1,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080904E4"
+    BEGIN
+      VALUE "CompanyName", "Neil Richardson"
+      VALUE "FileDescription", VER_FILEDESCRIPTION_STR
+      VALUE "FileVersion", VERSION_STR
+      VALUE "InternalName", INTERNAL_NAME
+      VALUE "LegalCopyright", "Copyright © 2021 Neil Richardson"
+      VALUE "OriginalFilename", VER_FILEDESCRIPTION_STR
+      VALUE "ProductName", PRODUCT_NAME
+      VALUE "ProductVersion", VERSION_STR
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x809, 1252
+  END
+END
+
+100 ICON "soda.ico"
