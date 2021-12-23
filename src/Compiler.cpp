@@ -20,6 +20,7 @@ static const VariableType Scalar(SimpleType::SCALAR);
 
 static const int32_t StackFrameSize = 32;
 
+/*
 static std::string str_toupper(std::string s) {
     std::transform(
         s.begin(), s.end(), s.begin(),
@@ -37,6 +38,7 @@ static std::string str_tolower(std::string s) {
 
     return s;
 }
+*/
 
 static void error(const std::string &err) {
     std::ostringstream s;
@@ -1770,8 +1772,8 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         }
     } else {
         auto type = expression(cpu, asmTokens, tokens);
-        //check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
-        //return type;
+        if (type != None)
+            add(asmTokens, OpCode::POPC);
     }
     return None;
 }
@@ -1817,8 +1819,6 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
 
         if (tokens[current].type != TokenType::SEMICOLON) {
             type = expression(cpu, asmTokens, tokens);
-        } else {
-            add(asmTokens, OpCode::POPC);
         }
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
         add(asmTokens, OpCode::RETURN);
@@ -1983,32 +1983,9 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         auto newtype = declaration(cpu, asmTokens, tokens);
 
-        if (std::holds_alternative<SimpleType>(type) && std::holds_alternative<SimpleType>(newtype)) {
-            auto existing = std::get<SimpleType>(type);
-            auto _new = std::get<SimpleType>(newtype);
-
-            if (existing == SimpleType::NONE) {
-                type = newtype;
-            } else {
-                if (existing != _new) {
-                    error("Return type mismatch");
-                }
-            }
-        } else if (std::holds_alternative<Struct>(type) && std::holds_alternative<Struct>(newtype)) {
-            auto existing = std::get<Struct>(type);
-            auto _new = std::get<Struct>(newtype);
-
-            if (existing.name != _new.name) {
-                error("Return type mismatch");
-            }
-        } else if (std::holds_alternative<SimpleType>(type) && std::holds_alternative<Struct>(newtype)) {
-            auto existing = std::get<SimpleType>(type);
-            if (existing == SimpleType::NONE) {
-                type = newtype;
-            } else {
-                error("Return type mismatch");
-            }
-        } else {
+        if (type == None) {
+            type = newtype;
+        } else if (type != newtype) {
             error("Return type mismatch");
         }
     }
