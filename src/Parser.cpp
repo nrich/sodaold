@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-static void error(uint32_t linenumber, const std::string &err);
+//static void error(uint32_t linenumber, const std::string &err);
 
 static bool isDigit(char c) {
     return c >= '0' && c <= '9';
@@ -23,6 +23,7 @@ static bool isWhitespace(char c) {
     return (c == ' ') || (c == '\t');
 }
 
+/*
 static std::string str_toupper(std::string s) {
     std::transform(
         s.begin(), s.end(), s.begin(),
@@ -31,6 +32,7 @@ static std::string str_toupper(std::string s) {
 
     return s;
 }
+*/
 
 static std::string str_tolower(std::string s) {
     std::transform(
