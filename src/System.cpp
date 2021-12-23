@@ -94,6 +94,8 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::IRQ: return "IRQ";
         case OpCode::ALLOC: return "ALLOC";
         case OpCode::CALLOC: return "CALLOC";
+        case OpCode::FREE: return "FREE";
+        case OpCode::FREEC: return "FREEC";
         case OpCode::YIELD: return "YIELD";
         case OpCode::TRACE: return "TRACE";
         default: return "????";

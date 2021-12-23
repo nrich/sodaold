@@ -124,6 +124,9 @@ enum class OpCode {
     ALLOC,
     CALLOC,
 
+    FREE,
+    FREEC,
+
     YIELD,
 
     TRACE,
