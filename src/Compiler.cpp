@@ -426,6 +426,22 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::RND);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "setcolours") {
+        auto left_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+        auto right_type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (left_type == None || left_type == Undefined)
+            error("Function `setcolours': Cannot assign a void value to parameter 1");
+        if (right_type == None || right_type == Undefined)
+            error("Function `setcolours': Cannot assign a void value to parameter 2");
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::COLOUR, RuntimeValue::NONE);
+        return None;
     } else if (token.str == "setcursor") {
         auto left_type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current++], TokenType::COMMA, "`,' expected");
@@ -433,9 +449,9 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error("Function `min': Cannot assign a void value to parameter 1");
+            error("Function `setcursor': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error("Function `min': Cannot assign a void value to parameter 2");
+            error("Function `setcursor': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
