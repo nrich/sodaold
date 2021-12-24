@@ -151,10 +151,10 @@ enum class TokenType {
 struct Token {
     TokenType type;
     int line;
-    int pos;
+    int position;
     std::string str;
     int lbp;
-    Token(TokenType type, const int line, const int pos, const std::string &str, const int lbp=Precedence::NONE) : type(type), line(line), pos(pos), str(str), lbp(lbp) {
+    Token(TokenType type, const int line, const int position, const std::string &str, const int lbp=Precedence::NONE) : type(type), line(line), position(position), str(str), lbp(lbp) {
     }
 
     std::string toString() const {

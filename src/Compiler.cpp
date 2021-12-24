@@ -40,15 +40,15 @@ static std::string str_tolower(std::string s) {
 }
 */
 
-static void error(const std::string &err) {
+static void error(const Token &token, const std::string &err) {
     std::ostringstream s;
-    s << "Error at position " << current << ": " << err;
+    s << "Error at line " << token.line << " " << token.position << ": " << err;
     throw std::domain_error(s.str());
 }
 
 static std::string identifier(const Token &token) {
     if (token.type != TokenType::IDENTIFIER) {
-        error("Identifier expected");
+        error(token ,"Identifier expected");
     }
 
     return token.str;
@@ -56,7 +56,7 @@ static std::string identifier(const Token &token) {
 
 static void check(const Token &token, TokenType type, const std::string &err) {
     if (token.type != type)
-        error(token.str + " " + err);
+        error(token, token.str + " " + err);
 }
 
 static void add(std::vector<AsmToken> &asmTokens, OpCode opcode, const std::string label="") {
@@ -132,7 +132,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `abs': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `abs': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPA);
         if (cpu == 16) {
@@ -151,7 +151,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `atan': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `atan': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::ATAN);
@@ -166,7 +166,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `cos': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `cos': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::COS);
@@ -267,11 +267,11 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (x_type == None || x_type == Undefined)
-            error("Function `sdrawpixel': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `sdrawpixel': Cannot assign a void value to parameter 1");
         if (y_type == None || y_type == Undefined)
-            error("Function `drawpixel': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `drawpixel': Cannot assign a void value to parameter 2");
         if (c_type == None || c_type == Undefined)
-            error("Function `drawpixel': Cannot assign a void value to parameter 3");
+            error(tokens[current], "Function `drawpixel': Cannot assign a void value to parameter 3");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::POPB);
@@ -284,7 +284,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `float': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `float': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::FLT);
@@ -295,7 +295,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `int': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `int': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::INT);
@@ -311,7 +311,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error("Function `gets': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `gets': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHIDX);
@@ -328,7 +328,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `keypressed': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `keypressed': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::KEYSET, RuntimeValue::C);
@@ -339,7 +339,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `log': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `log': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::LOG);
@@ -350,7 +350,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error("Function `make': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `make': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::CALLOC);
         return Scalar;
@@ -367,9 +367,9 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error("Function `max': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `max': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error("Function `max': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `max': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -393,9 +393,9 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error("Function `min': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `min': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error("Function `min': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `min': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -411,7 +411,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error("Function `puts': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `puts': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
@@ -435,9 +435,9 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error("Function `setcolours': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `setcolours': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error("Function `setcolours': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `setcolours': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -451,9 +451,9 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error("Function `setcursor': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `setcursor': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error("Function `setcursor': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `setcursor': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -465,7 +465,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `setpalette': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `setpalette': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::PALETTE, RuntimeValue::C);
@@ -475,7 +475,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `sin': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `sin': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SIN);
@@ -492,11 +492,11 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (frequency_type == None || frequency_type == Undefined)
-            error("Function `sound': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 1");
         if (duration_type == None || duration_type == Undefined)
-            error("Function `sound': Cannot assign a void value to parameter 2");
+            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 2");
         if (voice_type == None || voice_type == Undefined)
-            error("Function `sound': Cannot assign a void value to parameter 3");
+            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 3");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::POPB);
@@ -510,7 +510,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `sqrt': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `sqrt': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SQR);
@@ -521,7 +521,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `srand': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `srand': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SEED);
@@ -531,7 +531,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error("Function `tan': Cannot assign a void value to parameter 1");
+            error(tokens[current], "Function `tan': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::TAN);
@@ -586,7 +586,7 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::YIELD);
         return None;
     } else {
-        error(std::string("Unknown function `") + token.str + std::string("'"));
+        error(tokens[current], "Unknown function `" + token.str + "'");
     }
     return None;
 }
@@ -628,22 +628,22 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
                 if (argcount >= params)
-                    error("Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
+                    error(tokens[current], "Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
 
                 auto type = expression(cpu, asmTokens, tokens, 0);
 
                 if (type == None)
-                    error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
+                    error(tokens[current], "Function `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
                 auto param = function.params[argcount];
                 auto paramType = param.second;
 
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
-                        error(std::string("Function `") + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
                     }
                 }
 
@@ -652,24 +652,24 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
                 if (argcount >= params)
-                    error("Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
+                    error(tokens[current], "Function `" + name + "': Too many arguments, expected " + (params ? std::to_string(params) : "none"));
 
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
 
                 auto type = expression(cpu, asmTokens, tokens, 0);
 
                 if (type == None)
-                    error(std::string("Function `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
+                    error(tokens[current], "Function `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
                 auto param = function.params[argcount];
                 auto paramType = param.second;
 
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
-                        error(std::string("Function `") + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
-                        error(std::string("Function `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
                     }
                 }
 
@@ -678,7 +678,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
             if (argcount != function.params.size()) {
-                error(std::string("Function `") + name + "' expected " + std::to_string(function.params.size()) + " arguments, got " + std::to_string(argcount));
+                error(tokens[current], "Function `" + name + "' expected " + std::to_string(function.params.size()) + " arguments, got " + std::to_string(argcount));
             }
 
             add(asmTokens, OpCode::CALL, name);
@@ -698,7 +698,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             size_t argcount = 0;
             if (tokens[current].type != TokenType::RIGHT_PAREN) {
                 if (argcount >= slots)
-                    error("Struct `" + name + "': Too many arguments, expected " + (slots ? std::to_string(slots) : "none"));
+                    error(tokens[current], "Struct `" + name + "': Too many arguments, expected " + (slots ? std::to_string(slots) : "none"));
 
                 auto param = _struct.slots[argcount];
                 auto paramType = param.second;
@@ -707,14 +707,14 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                 auto type = expression(cpu, asmTokens, tokens, 0);
 
                 if (type == None)
-                    error(std::string("Struct `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
+                    error(tokens[current], "Struct `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
-                        error(std::string("Struct `") + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Struct `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
-                        error(std::string("Struct `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Struct `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
                     }
                 }
 
@@ -733,7 +733,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
 
             while (tokens[current].type != TokenType::RIGHT_PAREN) {
                 if (argcount >= slots)
-                    error("Struct `" + name + "': Too many arguments, expected " + (slots ? std::to_string(slots) : "none"));
+                    error(tokens[current], "Struct `" + name + "': Too many arguments, expected " + (slots ? std::to_string(slots) : "none"));
 
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
 
@@ -744,14 +744,14 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                 auto type = expression(cpu, asmTokens, tokens, 0);
 
                 if (type == None)
-                    error(std::string("Struct `") + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
+                    error(tokens[current], "Struct `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
-                        error(std::string("Struct `") + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Struct `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
-                        error(std::string("Struct `") + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
+                        error(tokens[current], "Struct `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
                     }
                 }
 
@@ -770,7 +770,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
             if (argcount != slots) {
-                error(std::string("Struct `") + name + "' expected " + std::to_string(slots) + " arguments, got " + std::to_string(argcount));
+                error(tokens[current], "Struct `" + name + "' expected " + std::to_string(slots) + " arguments, got " + std::to_string(argcount));
             }
 
             return VariableType(_struct);
@@ -778,7 +778,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             auto type = env->getType(token.str);
 
             if (type == Undefined)
-                error(std::string("Variable `") + token.str + "' used before initialisation");
+                error(tokens[current], "Variable `" + token.str + "' used before initialisation");
 
             addPointer(asmTokens, OpCode::LOADC, env->get(token.str));
             add(asmTokens, OpCode::PUSHC);
@@ -806,7 +806,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             auto type = env->getType(token.str);
 
             if (type == Undefined)
-                error(std::string("Variable `") + token.str + "' used before initialisation");
+                error(tokens[current], "Variable `" + token.str + "' used before initialisation");
 
             if (cpu == 16) {
                 addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(token.str)));
@@ -839,7 +839,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             return type;
         }
     } else {
-        error(std::string("value expected, got `") + token.str + "'");
+        error(tokens[current], "value expected, got `" + token.str + "'");
     }
     return None;
 }
@@ -857,7 +857,7 @@ static Array parseArray(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
             check(tokens[current++], TokenType::COMMA, "`,' expected");
 
             if (parseArray(cpu, asmTokens, tokens) != array)
-                error("Array mismatch");
+                error(tokens[current], "Array mismatch");
 
             current++;
             length++;
@@ -874,7 +874,7 @@ static Array parseArray(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
             check(tokens[current++], TokenType::COMMA, "`,' expected");
 
             if (expression(cpu, asmTokens, tokens, 0) != type)
-                error("Array mismatch");
+                error(tokens[current], "Array mismatch");
 
             length++;
         }
@@ -936,12 +936,12 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         auto name = identifier(tokens[current]);
 
         if (!env->isVariable(name))
-            error("Variable expected");
+            error(tokens[current], "Variable expected");
 
         auto type = prefix(cpu, asmTokens, tokens, rbp);
 
         if (type != Scalar)
-            error("Scalar expected");
+            error(tokens[current], "Scalar expected");
 
         add(asmTokens, OpCode::POPC);
 
@@ -969,12 +969,12 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
         auto name = identifier(tokens[current]);
 
         if (!env->isVariable(name))
-            error("Variable expected");
+            error(tokens[current], "Variable expected");
 
         auto type = prefix(cpu, asmTokens, tokens, rbp);
 
         if (type != Scalar)
-            error("Scalar expected");
+            error(tokens[current], "Scalar expected");
 
         add(asmTokens, OpCode::POPC);
 
@@ -1112,7 +1112,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         auto varType = lType;
 
         if (!std::holds_alternative<Array>(varType))
-            error("Array expected");
+            error(tokens[current], "Array expected");
 
         auto array = std::get<Array>(varType);
 
@@ -1163,7 +1163,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
         auto varType = lType;
 
         if (std::holds_alternative<SimpleType>(varType)) {
-            error("Struct expected");
+            error(tokens[current], "Struct expected");
         }
 
         auto _struct = std::get<Struct>(varType);
@@ -1273,7 +1273,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
         return type;
     } else {
-        error(std::string("op expected, got `") + token.str + "'");
+        error(tokens[current], "op expected, got `" + token.str + "'");
     }
 
     return None;
@@ -1281,7 +1281,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
 
 static VariableType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp=0) {
     if (tokens.size() == 0) {
-        error("Expression expected");
+        error(tokens[current], "Expression expected");
     }
 
     auto type = prefix(cpu, asmTokens, tokens, rbp);
@@ -1337,7 +1337,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
-                error(type_name + " does not name a struct");
+                error(tokens[current], type_name + " does not name a struct");
 
             type = env->getStruct(type_name);
         }
@@ -1374,7 +1374,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
             if (type == None)
-                error(std::string("Cannot assign a void value to variable `") + name + "'");
+                error(tokens[current], "Cannot assign a void value to variable `" + name + "'");
 
             add(asmTokens, OpCode::POPC);
             if (cpu == 16) {
@@ -1387,7 +1387,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
 
             if (type == None)
-                error(std::string("Cannot assign a void value to variable `") + name + "'");
+                error(tokens[current], "Cannot assign a void value to variable `" + name + "'");
 
             add(asmTokens, OpCode::POPC);
             addPointer(asmTokens, OpCode::STOREC, env->create(name, type));
@@ -1507,7 +1507,7 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
         current++;
 
         if (!std::holds_alternative<Array>(containerType))
-            error("Array expected");
+            error(tokens[current], "Array expected");
 
         auto array = std::get<Array>(containerType);
         auto subType = array.getType();
@@ -1546,7 +1546,7 @@ static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmToken
         current++;
 
         if (!(std::holds_alternative<Struct>(containerType)))
-            error("Struct instance expected");
+            error(tokens[current], "Struct instance expected");
 
         auto _struct = std::get<Struct>(containerType);
 
@@ -1580,16 +1580,16 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
     auto varname = tokens[current].str;
 
     if (env->isFunction(varname)) {
-        error("Cannot reassign function");
+        error(tokens[current], "Cannot reassign function");
     } else if (env->isStruct(varname)) {
-        error("Cannot reassign struct");
+        error(tokens[current], "Cannot reassign struct");
     } else if (env->isGlobal(varname)) {
         current += 2;
 
         auto type = expression(cpu, asmTokens, tokens);
 
         if (type == None)
-            error(std::string("Cannot assign a void value to variable `") + varname + "'");
+            error(tokens[current], "Cannot assign a void value to variable `" + varname + "'");
 
         addPointer(asmTokens, OpCode::LOADA, env->get(varname));
         add(asmTokens, OpCode::POPB);
@@ -1603,7 +1603,7 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
         auto type = expression(cpu, asmTokens, tokens);
 
         if (type == None)
-            error(std::string("Cannot assign a void value to variable `") + varname + "'");
+            error(tokens[current], "Cannot assign a void value to variable `" + varname + "'");
 
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::READA, Int16AsValue(env->get(varname)));
@@ -1640,9 +1640,9 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
        auto varname = tokens[current].str; 
 
         if (env->isFunction(varname)) {
-            error("Cannot reassign function");
+            error(tokens[current], "Cannot reassign function");
         } else if (env->isStruct(varname)) {
-            error("Cannot reassign struct");
+            error(tokens[current], "Cannot reassign struct");
         } else if (env->isGlobal(varname)) {
             current += 2;
 
@@ -1656,7 +1656,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
             auto type = expression(cpu, asmTokens, tokens);
 
             if (type == None)
-                error(std::string("Cannot assign a void value to variable `") + varname + "'");
+                error(tokens[current], "Cannot assign a void value to variable `" + varname + "'");
 
             add(asmTokens, OpCode::POPC);
 
@@ -1692,9 +1692,9 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
         auto varname = tokens[current++].str;
 
         if (env->isFunction(varname)) {
-            error("Cannot index function");
+            error(tokens[current], "Cannot index function");
         } else if (env->isStruct(varname)) {
-            error("Cannot index struct type");
+            error(tokens[current], "Cannot index struct type");
         } else {
             auto varType = env->getType(varname);
 
@@ -1760,10 +1760,10 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
                 auto type = expression(cpu, asmTokens, tokens);
 
                 if (type == None)
-                    error(std::string("Cannot assign a void value"));
+                    error(tokens[current], "Cannot assign a void value");
 
                 if (type != ltype)
-                    error("Type mismatch");
+                    error(tokens[current], "Type mismatch");
 
                 add(asmTokens, OpCode::POPC);
                 add(asmTokens, OpCode::POPIDX);
@@ -1793,13 +1793,13 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
     } else if (tokens[current].type == TokenType::BREAK) {
         current++;
         if (LOOP_BREAK.size() == 0)
-            error("Cannot break when not in loop");
+            error(tokens[current], "Cannot break when not in loop");
         add(asmTokens, OpCode::JMP, LOOP_BREAK);
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
     } else if (tokens[current].type == TokenType::CONTINUE) {
         current++;
         if (LOOP_CONTINUE.size() == 0)
-            error("Cannot continue when not in loop");
+            error(tokens[current], "Cannot continue when not in loop");
         add(asmTokens, OpCode::JMP, LOOP_CONTINUE);
         check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
     } else if (tokens[current].type == TokenType::LEFT_BRACE) {
@@ -1812,7 +1812,7 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
         env = env->endScope();
     } else if (tokens[current].type == TokenType::RETURN) {
         if (!env->inFunction()) {
-            error("Cannot return when not in function");
+            error(tokens[current], "Cannot return when not in function");
         }
         current++;
         VariableType type = None;
@@ -1846,7 +1846,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
-                error(type_name + " does not name a struct");
+                error(tokens[current], type_name + " does not name a struct");
 
             auto _struct = env->getStruct(type_name);
             params.push_back(std::make_pair(param, VariableType(_struct)));
@@ -1874,7 +1874,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 auto type_name = identifier(tokens[current++]);
 
                 if (!env->isStruct(type_name))
-                    error(type_name + " does not name a struct");
+                    error(tokens[current], type_name + " does not name a struct");
 
                 type = env->getStruct(type_name);
             }
@@ -1902,7 +1902,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
-                error(type_name + " does not name a struct");
+                error(tokens[current], type_name + " does not name a struct");
 
             auto _struct = env->getStruct(type_name);
 
@@ -1931,7 +1931,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 auto type_name = identifier(tokens[current++]);
 
                 if (!env->isStruct(type_name))
-                    error(type_name + " does not name a struct");
+                    error(tokens[current], type_name + " does not name a struct");
 
                 type = env->getStruct(type_name);
             }
@@ -1986,7 +1986,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
         if (type == None) {
             type = newtype;
         } else if (type != newtype) {
-            error("Return type mismatch");
+            error(tokens[current], "Return type mismatch");
         }
     }
 
@@ -2017,7 +2017,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
         auto type_name = identifier(tokens[current++]);
 
         if (!env->isStruct(type_name))
-            error(type_name + " does not name a struct");
+            error(tokens[current], type_name + " does not name a struct");
 
         type = env->getStruct(type_name);
     } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
@@ -2050,7 +2050,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
-                error(type_name + " does not name a struct");
+                error(tokens[current], type_name + " does not name a struct");
 
             type = env->getStruct(type_name);
         }
@@ -2078,7 +2078,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
             auto type_name = identifier(tokens[current++]);
 
             if (!env->isStruct(type_name))
-                    error(type_name + " does not name a struct");
+                error(tokens[current], type_name + " does not name a struct");
 
             type = env->getStruct(type_name);
         } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
@@ -2110,7 +2110,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
                 auto type_name = identifier(tokens[current++]);
 
                 if (!env->isStruct(type_name))
-                    error(type_name + " does not name a struct");
+                    error(tokens[current], type_name + " does not name a struct");
 
                 type = env->getStruct(type_name);
             }
