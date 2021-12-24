@@ -50,9 +50,9 @@ std::vector<Token> parse(const std::string &source) {
     size_t pos = 1;
 
     while (i < source.size()) {
-        if (i == '\n') {
+        if (source[i] == '\n') {
             line++;
-            pos = 1;
+            pos = i;
         }
 
         if (isWhitespace(source[i])) {
@@ -66,7 +66,7 @@ std::vector<Token> parse(const std::string &source) {
                 i++;
 
             line++;
-            pos = 1;
+            pos = i;
         }
 
         if (isDigit(source[i])) {
@@ -84,7 +84,7 @@ std::vector<Token> parse(const std::string &source) {
                     i++;
             }
 
-            tokens.push_back(Token(tokenType, line, pos, source.substr(start, i-start)));
+            tokens.push_back(Token(tokenType, line, i-pos, source.substr(start, i-start)));
         } else if (isAlpha(source[i])) {
             auto precedence = Precedence::NONE;
             size_t start = i++;
@@ -282,7 +282,7 @@ std::vector<Token> parse(const std::string &source) {
             if (tokenType != TokenType::IDENTIFIER)
                 token = keyword;
 
-            tokens.push_back(Token(tokenType, line, pos, token, precedence));
+            tokens.push_back(Token(tokenType, line, i-pos, token, precedence));
         } else if (source[i] == '\'') {
             int start = i++;
             std::string str;
@@ -337,223 +337,223 @@ std::vector<Token> parse(const std::string &source) {
                 case '-':
                     switch (source[i]) {
                         case '>':
-                            tokens.push_back(Token(TokenType::ACCESSOR, line, pos, "->", Precedence::CALL));
+                            tokens.push_back(Token(TokenType::ACCESSOR, line, i-pos, "->", Precedence::CALL));
                             i++;
                             break;
                         case '-':
-                            tokens.push_back(Token(TokenType::DECREMENT, line, pos, "--"));
+                            tokens.push_back(Token(TokenType::DECREMENT, line, i-pos, "--"));
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::MINUS_ASSIGN, line, pos, "-=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::MINUS_ASSIGN, line, i-pos, "-=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::MINUS, line, pos, "-", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::MINUS, line, i-pos, "-", Precedence::TERM));
                     }
                     break;
                 case '+':
                     switch (source[i]) {
                         case '+':
-                            tokens.push_back(Token(TokenType::INCREMENT, line, pos, "++"));
+                            tokens.push_back(Token(TokenType::INCREMENT, line, i-pos, "++"));
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::PLUS_ASSIGN, line, pos, "+=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::PLUS_ASSIGN, line, i-pos, "+=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::PLUS, line, pos, "+", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::PLUS, line, i-pos, "+", Precedence::TERM));
                     }
                     break;
                 case '/':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::SLASH_ASSIGN, line, pos, "/=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::SLASH_ASSIGN, line, i-pos, "/=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::SLASH, line, pos, "/", Precedence::FACTOR));
+                            tokens.push_back(Token(TokenType::SLASH, line, i-pos, "/", Precedence::FACTOR));
                     }
                     break;
                 case '*':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::STAR_ASSIGN, line, pos, "*=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::STAR_ASSIGN, line, i-pos, "*=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::STAR, line, pos, "*", Precedence::FACTOR));
+                            tokens.push_back(Token(TokenType::STAR, line, i-pos, "*", Precedence::FACTOR));
                     }
                     break;
                 case '^':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::CARAT_ASSIGN, line, pos, "^=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::CARAT_ASSIGN, line, i-pos, "^=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::CARAT, line, pos, "^", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::CARAT, line, i-pos, "^", Precedence::TERM));
                     }
                     break;
                 case '\\':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::BACKSLASH_ASSIGN, line, pos, "\\=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::BACKSLASH_ASSIGN, line, i-pos, "\\=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::BACKSLASH, line, pos, "\\", Precedence::FACTOR));
+                            tokens.push_back(Token(TokenType::BACKSLASH, line, i-pos, "\\", Precedence::FACTOR));
                     }
                     break;
                 case '%':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::PERCENT_ASSIGN, line, pos, "%=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::PERCENT_ASSIGN, line, i-pos, "%=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::PERCENT, line, pos, "%", Precedence::FACTOR));
+                            tokens.push_back(Token(TokenType::PERCENT, line, i-pos, "%", Precedence::FACTOR));
                     }
                     break;
                 case ';':
-                    tokens.push_back(Token(TokenType::SEMICOLON, line, pos, ";"));
+                    tokens.push_back(Token(TokenType::SEMICOLON, line, i-pos, ";"));
                     break;
                 case ':':
-                    tokens.push_back(Token(TokenType::COLON, line, pos, ":"));
+                    tokens.push_back(Token(TokenType::COLON, line, i-pos, ":"));
                     break;
                 case '\'':
-                    tokens.push_back(Token(TokenType::QUOTE, line, pos, "'"));
+                    tokens.push_back(Token(TokenType::QUOTE, line, i-pos, "'"));
                     break;
                 case ',':
-                    tokens.push_back(Token(TokenType::COMMA, line, pos, ","));
+                    tokens.push_back(Token(TokenType::COMMA, line, i-pos, ","));
                     break;
                 case '.':
-                    tokens.push_back(Token(TokenType::DOT, line, pos, "."));
+                    tokens.push_back(Token(TokenType::DOT, line, i-pos, "."));
                     break;
                 case '?':
-                    tokens.push_back(Token(TokenType::QUESTION_MARK, line, pos, "?"));
+                    tokens.push_back(Token(TokenType::QUESTION_MARK, line, i-pos, "?"));
                     break;
                 case '&':
                     switch (source[i]) {
                         case '&':
-                            tokens.push_back(Token(TokenType::AND, line, pos, "&&", Precedence::AND));
+                            tokens.push_back(Token(TokenType::AND, line, i-pos, "&&", Precedence::AND));
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::AMPERSAND_ASSIGN, line, pos, "&=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::AMPERSAND_ASSIGN, line, i-pos, "&=", Precedence::ASSIGNMENT));
                             i++;
                             break;
 
                         default:
-                            tokens.push_back(Token(TokenType::AMPERSAND, line, pos, "&", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::AMPERSAND, line, i-pos, "&", Precedence::TERM));
                     }
                     break;
                 case '$':
-                    tokens.push_back(Token(TokenType::DOLLAR, line, pos, "$"));
+                    tokens.push_back(Token(TokenType::DOLLAR, line, i-pos, "$"));
                     break;
                 case '~':
-                    tokens.push_back(Token(TokenType::TILDE, line, pos, "~"));
+                    tokens.push_back(Token(TokenType::TILDE, line, i-pos, "~"));
                     break;
                 case '@':
-                    tokens.push_back(Token(TokenType::AT, line, pos, "@"));
+                    tokens.push_back(Token(TokenType::AT, line, i-pos, "@"));
                     break;
                 case '|':
                     switch (source[i]) {
                         case '|':
-                            tokens.push_back(Token(TokenType::OR, line, pos, "||", Precedence::OR));
+                            tokens.push_back(Token(TokenType::OR, line, i-pos, "||", Precedence::OR));
                             i++;
                             break;
                         case '=':
-                            tokens.push_back(Token(TokenType::PIPE_ASSIGN, line, pos, "|=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::PIPE_ASSIGN, line, i-pos, "|=", Precedence::ASSIGNMENT));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::PIPE, line, pos, "|", Precedence::TERM));
+                            tokens.push_back(Token(TokenType::PIPE, line, i-pos, "|", Precedence::TERM));
                     }
                     break;
                 case '`':
-                    tokens.push_back(Token(TokenType::BACKTICK, line, pos, "`"));
+                    tokens.push_back(Token(TokenType::BACKTICK, line, i-pos, "`"));
                     break;
                 case '=':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::EQUAL, line, pos, "==", Precedence::EQUALITY));
+                            tokens.push_back(Token(TokenType::EQUAL, line, i-pos, "==", Precedence::EQUALITY));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::ASSIGN, line, pos, "=", Precedence::ASSIGNMENT));
+                            tokens.push_back(Token(TokenType::ASSIGN, line, i-pos, "=", Precedence::ASSIGNMENT));
                     }
                     break;
                 case '!':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::NOT_EQUAL, line, pos, "!=", Precedence::EQUALITY));
+                            tokens.push_back(Token(TokenType::NOT_EQUAL, line, i-pos, "!=", Precedence::EQUALITY));
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::NOT, line, pos, "!"));
+                            tokens.push_back(Token(TokenType::NOT, line, i-pos, "!"));
                     }
                     break;
                 case '>':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::GREATER_EQUAL, line, pos, ">=", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::GREATER_EQUAL, line, i-pos, ">=", Precedence::COMPARISON));
                             i++;
                             break;
                         case '>':
                             switch (source[i+1]) {
                                 case '=':
-                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT_ASSIGN, line, pos, ">>=", Precedence::ASSIGNMENT));
+                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT_ASSIGN, line, i-pos, ">>=", Precedence::ASSIGNMENT));
                                     i++;
                                     break;
                                 default:
-                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT, line, pos, ">>", Precedence::FACTOR));
+                                    tokens.push_back(Token(TokenType::RIGHT_SHIFT, line, i-pos, ">>", Precedence::FACTOR));
                             }
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::GREATER, line, pos, ">", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::GREATER, line, i-pos, ">", Precedence::COMPARISON));
                     }
                     break;
                 case '<':
                     switch (source[i]) {
                         case '=':
-                            tokens.push_back(Token(TokenType::LESS_EQUAL, line, pos, "<=", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::LESS_EQUAL, line, i-pos, "<=", Precedence::COMPARISON));
                             i++;
                             break;
                         case '<':
                             switch (source[i+1]) {
                                 case '=':
-                                    tokens.push_back(Token(TokenType::LEFT_SHIFT_ASSIGN, line, pos, "<<=", Precedence::ASSIGNMENT));
+                                    tokens.push_back(Token(TokenType::LEFT_SHIFT_ASSIGN, line, i-pos, "<<=", Precedence::ASSIGNMENT));
                                     i++;
                                     break;
                                 default:
-                                    tokens.push_back(Token(TokenType::LEFT_SHIFT, line, pos, "<<", Precedence::FACTOR));
+                                    tokens.push_back(Token(TokenType::LEFT_SHIFT, line, i-pos, "<<", Precedence::FACTOR));
                             }
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::LESS, line, pos, "<", Precedence::COMPARISON));
+                            tokens.push_back(Token(TokenType::LESS, line, i-pos, "<", Precedence::COMPARISON));
                     }
                     break;
                 case '(':
-                    tokens.push_back(Token(TokenType::LEFT_PAREN, line, pos, "(", Precedence::CALL));
+                    tokens.push_back(Token(TokenType::LEFT_PAREN, line, i-pos, "(", Precedence::CALL));
                     break;
                 case ')':
-                    tokens.push_back(Token(TokenType::RIGHT_PAREN, line, pos, ")"));
+                    tokens.push_back(Token(TokenType::RIGHT_PAREN, line, i-pos, ")"));
                     break;
                 case '{':
-                    tokens.push_back(Token(TokenType::LEFT_BRACE, line, pos, "{"));
+                    tokens.push_back(Token(TokenType::LEFT_BRACE, line, i-pos, "{"));
                     break;
                 case '}':
-                    tokens.push_back(Token(TokenType::RIGHT_BRACE, line, pos, "}"));
+                    tokens.push_back(Token(TokenType::RIGHT_BRACE, line, i-pos, "}"));
                     break;
                 case '[':
-                    tokens.push_back(Token(TokenType::LEFT_BRACKET, line, pos, "[", Precedence::CALL));
+                    tokens.push_back(Token(TokenType::LEFT_BRACKET, line, i-pos, "[", Precedence::CALL));
                     break;
                 case ']':
-                    tokens.push_back(Token(TokenType::RIGHT_BRACKET, line, pos, "]"));
+                    tokens.push_back(Token(TokenType::RIGHT_BRACKET, line, i-pos, "]"));
                     break;
 
             }
@@ -561,7 +561,7 @@ std::vector<Token> parse(const std::string &source) {
         }
     }
 
-    tokens.push_back(Token(TokenType::EOL, line, pos, ""));
+    tokens.push_back(Token(TokenType::EOL, line, i-pos, ""));
 
     return tokens;
 }

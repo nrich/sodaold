@@ -42,7 +42,7 @@ static std::string str_tolower(std::string s) {
 
 static void error(const Token &token, const std::string &err) {
     std::ostringstream s;
-    s << "Error at line " << token.line << " " << token.position << ": " << err;
+    s << "Error at line " << token.line << " position " << token.position << ": " << err;
     throw std::domain_error(s.str());
 }
 
@@ -678,7 +678,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
             if (argcount != function.params.size()) {
-                error(tokens[current], "Function `" + name + "' expected " + std::to_string(function.params.size()) + " arguments, got " + std::to_string(argcount));
+                error(token, "Function `" + name + "' expected " + std::to_string(function.params.size()) + " arguments, got " + std::to_string(argcount));
             }
 
             add(asmTokens, OpCode::CALL, name);
@@ -770,7 +770,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
             check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
             if (argcount != slots) {
-                error(tokens[current], "Struct `" + name + "' expected " + std::to_string(slots) + " arguments, got " + std::to_string(argcount));
+                error(token, "Struct `" + name + "' expected " + std::to_string(slots) + " arguments, got " + std::to_string(argcount));
             }
 
             return VariableType(_struct);
