@@ -12,11 +12,11 @@ static size_t current = 0;
 
 static std::shared_ptr<Environment> env;
 
-static VariableType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp);
+static ValueType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp);
 
-static const VariableType None(SimpleType::NONE);
-static const VariableType Undefined(SimpleType::UNDEFINED);
-static const VariableType Scalar(SimpleType::SCALAR);
+static const ValueType None(SimpleType::NONE);
+static const ValueType Undefined(SimpleType::UNDEFINED);
+static const ValueType Scalar(SimpleType::SCALAR);
 
 static const int32_t StackFrameSize = 32;
 
@@ -120,7 +120,7 @@ static uint64_t Int32AsValue(int32_t i) {
     return (uint64_t)(QNAN|(uint32_t)i);
 }
 
-static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
 
     check(tokens[current+1], TokenType::LEFT_PAREN, "`(' expected");
@@ -290,17 +290,35 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::FLT);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
-    } else if (token.str == "int") {
+    } else if (token.str == "free") {
         auto type = expression(cpu, asmTokens, tokens, 0);
+        uint16_t size = 0;
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
-        if (type == None || type == Undefined)
-            error(tokens[current], "Function `int': Cannot assign a void value to parameter 1");
+        add(asmTokens, OpCode::POPIDX);
 
-        add(asmTokens, OpCode::POPC);
-        add(asmTokens, OpCode::INT);
-        add(asmTokens, OpCode::PUSHC);
-        return Scalar;
+        if (type == None || type == Undefined) {
+            error(tokens[current], "Function `free': Cannot assign a void value to parameter 1");
+        } else if (std::holds_alternative<Struct>(type)) {
+            auto _struct = std::get<Struct>(type);
+            size = _struct.size();
+        } else if (std::holds_alternative<Array>(type)) {
+            auto array = std::get<Array>(type);
+            size = array.size();
+        } else if (std::holds_alternative<String>(type)) {
+            auto _string = std::get<String>(type);
+            size = _string.size();
+        } else {
+            error(tokens[current], "Function `free': Cannot free a scalar value");
+        }
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::FREE, Int16AsValue(size));
+        } else {
+            addValue32(asmTokens, OpCode::FREE, Int32AsValue(size));
+        }
+
+        return None;
     } else if (token.str == "getc") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::READKEY, RuntimeValue::C);
@@ -322,6 +340,17 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
         add(asmTokens, OpCode::POPIDX);
         add(asmTokens, OpCode::PUSHC);
 
+        return Scalar;
+    } else if (token.str == "int") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error(tokens[current], "Function `int': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::INT);
+        add(asmTokens, OpCode::PUSHC);
         return Scalar;
     } else if (token.str == "keypressed") {
         auto type = expression(cpu, asmTokens, tokens, 0);
@@ -591,16 +620,19 @@ static VariableType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std
     return None;
 }
 
-static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
 
     if (token.type == TokenType::STRING) {
-        addShort(asmTokens, OpCode::ALLOC, token.str.size()+1);
-        addString(asmTokens, OpCode::SDATA, token.str);
-        add(asmTokens, OpCode::PUSHIDX);
-        add(asmTokens, OpCode::POPC);
+        //addShort(asmTokens, OpCode::ALLOC, token.str.size()+1);
+        //addString(asmTokens, OpCode::SDATA, token.str);
+        //add(asmTokens, OpCode::PUSHIDX);
+        //add(asmTokens, OpCode::POPC);
+        //add(asmTokens, OpCode::PUSHC);
+        addPointer(asmTokens, OpCode::LOADC, env->defineString(token.str));
         add(asmTokens, OpCode::PUSHC);
-        return Scalar;
+
+        return String(token.str);
     } else if (token.type == TokenType::INTEGER) {
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
@@ -773,7 +805,7 @@ static VariableType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, cons
                 error(token, "Struct `" + name + "' expected " + std::to_string(slots) + " arguments, got " + std::to_string(argcount));
             }
 
-            return VariableType(_struct);
+            return ValueType(_struct);
         } else if (env->isGlobal(token.str)) {
             auto type = env->getType(token.str);
 
@@ -885,7 +917,7 @@ static Array parseArray(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     }
 }
 
-static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp) {
+static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp) {
     if (tokens[current].type == TokenType::LEFT_PAREN) {
         current++;
         auto type = expression(cpu, asmTokens, tokens, 0);
@@ -1028,7 +1060,7 @@ static VariableType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std:
     }
 }
 
-static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs, const VariableType lType, const std::vector<Token> &tokens) {
+static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs, const ValueType lType, const std::vector<Token> &tokens) {
     auto token = tokens[current++];
 
     if (token.type == TokenType::STAR) {
@@ -1279,7 +1311,7 @@ static VariableType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &l
     return None;
 }
 
-static VariableType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp=0) {
+static ValueType expression(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, int rbp=0) {
     if (tokens.size() == 0) {
         error(tokens[current], "Expression expected");
     }
@@ -1331,7 +1363,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
         }
 
-        VariableType type = Scalar;
+        ValueType type = Scalar;
         if (tokens[current].type == TokenType::COLON) {
             current++;
             auto type_name = identifier(tokens[current++]);
@@ -1397,8 +1429,8 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
     }
 }
 
-static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens);
-static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens);
+static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens);
+static ValueType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens);
 
 static void if_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     static int IFs = 1;
@@ -1502,7 +1534,7 @@ static void for_statment(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     add(asmTokens, OpCode::NOP, "FOR_" + std::to_string(_for) + "_FALSE");
 }
 
-static VariableType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, VariableType containerType) {
+static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens, ValueType containerType) {
     if (tokens[current].type == TokenType::LEFT_BRACKET) {
         current++;
 
@@ -1635,7 +1667,7 @@ static void assign_op_composite_statement(int cpu, std::vector<AsmToken> &asmTok
 }
 
 
-static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::ASSIGN) {
        auto varname = tokens[current].str; 
 
@@ -1779,7 +1811,7 @@ static VariableType statement(int cpu, std::vector<AsmToken> &asmTokens, const s
 }
 
 
-static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+static ValueType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::CONST) {
         define_const(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::AUTO) {
@@ -1815,7 +1847,7 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
             error(tokens[current], "Cannot return when not in function");
         }
         current++;
-        VariableType type = None;
+        ValueType type = None;
 
         if (tokens[current].type != TokenType::SEMICOLON) {
             type = expression(cpu, asmTokens, tokens);
@@ -1832,7 +1864,7 @@ static VariableType declaration(int cpu, std::vector<AsmToken> &asmTokens, const
 }
 
 static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
-    std::vector<std::pair<std::string, VariableType>> params;
+    std::vector<std::pair<std::string, ValueType>> params;
 
     check(tokens[current++], TokenType::DEF, "`def' expected");
     auto name = identifier(tokens[current++]);
@@ -1849,7 +1881,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 error(tokens[current], type_name + " does not name a struct");
 
             auto _struct = env->getStruct(type_name);
-            params.push_back(std::make_pair(param, VariableType(_struct)));
+            params.push_back(std::make_pair(param, ValueType(_struct)));
         } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
             current++;
 
@@ -1868,7 +1900,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
             }
 
-            VariableType type = Scalar;
+            ValueType type = Scalar;
             if (tokens[current].type == TokenType::COLON) {
                 current++;
                 auto type_name = identifier(tokens[current++]);
@@ -1906,7 +1938,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
             auto _struct = env->getStruct(type_name);
 
-            params.push_back(std::make_pair(param, VariableType(_struct)));
+            params.push_back(std::make_pair(param, ValueType(_struct)));
         } else if (tokens[current].type == TokenType::LEFT_BRACKET) {
             current++;
 
@@ -1925,7 +1957,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
             }
 
-            VariableType type = Scalar;
+            ValueType type = Scalar;
             if (tokens[current].type == TokenType::COLON) {
                 current++;
                 auto type_name = identifier(tokens[current++]);
@@ -1979,7 +2011,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
     check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
 
-    VariableType type = SimpleType::NONE;
+    ValueType type = SimpleType::NONE;
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         auto newtype = declaration(cpu, asmTokens, tokens);
 
@@ -2002,7 +2034,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 }
 
 static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
-    std::vector<std::pair<std::string, VariableType>> slots;
+    std::vector<std::pair<std::string, ValueType>> slots;
 
     check(tokens[current++], TokenType::STRUCT, "`struct' expected");
     auto name = identifier(tokens[current++]);
@@ -2010,7 +2042,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
     check(tokens[current++], TokenType::SLOT, "`slot' expected");
     auto slot = identifier(tokens[current++]);
 
-    VariableType type = Scalar;
+    ValueType type = Scalar;
     if (tokens[current].type == TokenType::COLON) {
         current++;
 
@@ -2070,7 +2102,7 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
         check(tokens[current++], TokenType::SLOT, "`slot' expected");
         auto slot = identifier(tokens[current++]);
 
-        VariableType type = Scalar;
+        ValueType type = Scalar;
 
         if (tokens[current].type == TokenType::COLON) {
             current++;

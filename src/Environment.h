@@ -13,55 +13,74 @@ enum class SimpleType {
     SCALAR
 };
 
-typedef std::variant<struct Struct, struct Array, SimpleType> VariableType;
+typedef std::variant<struct Struct, struct Array, struct String, SimpleType> ValueType;
+
+struct String {
+    std::string value;
+
+    String(const std::string &value) : value(value) {
+    }
+
+    bool operator==(const String &rhs) const {
+        return value == rhs.value;
+    }
+
+    bool operator!=(const String &rhs) const {
+        return value != rhs.value;
+    }
+
+    size_t size() const {
+        return value.size() + 1;
+    }
+};
 
 struct Array {
-    std::shared_ptr<VariableType> type;
+    std::shared_ptr<ValueType> type;
     size_t length;
     size_t offset;
 
-    Array(VariableType type, size_t length, size_t offset);
+    Array(ValueType type, size_t length, size_t offset);
 
     bool operator==(const Array &rhs) const;
     bool operator!=(const Array &rhs) const;
 
-    VariableType getType() const;
-    VariableType getStoredType() const;
+    ValueType getType() const;
+    ValueType getStoredType() const;
 
     size_t size() const;
 };
 
 struct Struct {
     std::string name;
-    std::vector<std::pair<std::string, VariableType>> slots;
+    std::vector<std::pair<std::string, ValueType>> slots;
     size_t size() const {
         return slots.size();
     }
 
-    Struct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slots) : name(name), slots(slots) {
+    Struct(const std::string &name, std::vector<std::pair<std::string, ValueType>> slots) : name(name), slots(slots) {
     }
 
     bool operator==(const Struct &rhs) const;
 
     bool operator!=(const Struct &rhs) const;
 
-    VariableType getType(const std::string &slot) const;
+    ValueType getType(const std::string &slot) const;
 
     uint32_t getOffset(const std::string &slot) const;
 };
 
 struct Function {
     const std::string name;
-    const std::vector<std::pair<std::string, VariableType>> params;
-    VariableType returnType;
+    const std::vector<std::pair<std::string, ValueType>> params;
+    ValueType returnType;
 
-    Function(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) : name(name), params(params), returnType(returnType) {
+    Function(const std::string &name, std::vector<std::pair<std::string, ValueType>> params, ValueType returnType) : name(name), params(params), returnType(returnType) {
     }
 };
 
 class Environment {
     private:
-        std::map<const std::string, std::pair<uint32_t, VariableType>> vars;
+        std::map<const std::string, std::pair<uint32_t, ValueType>> vars;
         std::map<const std::string, Function> functions;
         std::map<const std::string, Struct> structs;
         std::shared_ptr<Environment> parent;
@@ -98,13 +117,13 @@ class Environment {
             return parent;
         }
 
-        Struct defineStruct(const std::string &name, std::vector<std::pair<std::string, VariableType>> slotlist) {
+        Struct defineStruct(const std::string &name, std::vector<std::pair<std::string, ValueType>> slotlist) {
             auto _struct = Struct(name, slotlist);
             structs.insert(std::make_pair(name, _struct));
             return _struct;
         }
 
-        Function defineFunction(const std::string &name, std::vector<std::pair<std::string, VariableType>> params, VariableType returnType) {
+        Function defineFunction(const std::string &name, std::vector<std::pair<std::string, ValueType>> params, ValueType returnType) {
             auto function = Function(name, params, returnType);
             functions.emplace(name, function);
             return function;
@@ -146,7 +165,6 @@ class Environment {
             }
         }
 
-
         const size_t Offset() const {
             return offset;
         }
@@ -169,7 +187,7 @@ class Environment {
             }
         }
 
-        VariableType getType(const std::string &name) const {
+        ValueType getType(const std::string &name) const {
             auto found = vars.find(name);
 
             if (found != vars.end()) {
@@ -239,7 +257,7 @@ class Environment {
             }
         }
 
-        int32_t create(const std::string &name, VariableType type, size_t count=1) {
+        int32_t create(const std::string &name, ValueType type, size_t count=1) {
             auto existing = vars.find(name);
             if (existing != vars.end()) {
                 return existing->second.first;
@@ -252,7 +270,25 @@ class Environment {
             return next;
         }
 
-        uint32_t set(const std::string &name, VariableType type) {
+        int32_t defineString(const std::string &value) {
+            if (parent) {
+                return parent->defineString(value);
+            } else {
+                auto lookup = "$" + value;
+
+                auto existing = vars.find(lookup);
+                if (existing != vars.end()) {
+                    return existing->second.first;
+                }
+
+                int32_t next = Offset() + vars.size() + localBlocks;
+                vars.insert(std::make_pair(lookup, std::make_pair(next, String(value))));
+
+                return next;
+            }
+        }
+
+        uint32_t set(const std::string &name, ValueType type) {
             auto found = vars.find(name);
 
             if (found != vars.end()) {
@@ -278,6 +314,6 @@ class Environment {
         }
 };
 
-std::string VariableTypeToString(VariableType type);
+std::string ValueTypeToString(ValueType type);
 
 #endif //__ENVIRONMENT_H__

@@ -162,6 +162,10 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "for") {
                         tokenType = TokenType::FOR;
                     }
+                    else
+                    if (keyword == "free") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 'g':
                     if (keyword == "getc") {

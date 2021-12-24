@@ -3,7 +3,7 @@
 
 #include "Environment.h"
 
-Array::Array(VariableType type, size_t length, size_t offset) : type(std::shared_ptr<VariableType>(new VariableType(type))), length(length), offset(offset) {
+Array::Array(ValueType type, size_t length, size_t offset) : type(std::shared_ptr<ValueType>(new ValueType(type))), length(length), offset(offset) {
 }
 
 bool Array::operator==(const Array &rhs) const {
@@ -20,7 +20,7 @@ bool Array::operator!=(const Array &rhs) const {
     return *type != *rhs.type || length != rhs.length;
 }
 
-VariableType Array::getType() const {
+ValueType Array::getType() const {
     return *type;
 }
 
@@ -35,7 +35,7 @@ size_t Array::size() const {
 }
 
 
-VariableType Array::getStoredType() const {
+ValueType Array::getStoredType() const {
     if (std::holds_alternative<Array>(*type)) {
         auto array = std::get<Array>(*type);
         return array.getStoredType();
@@ -52,7 +52,7 @@ bool Struct::operator!=(const Struct &rhs) const {
     return name != rhs.name;
 }
 
-VariableType Struct::getType(const std::string &slot) const {
+ValueType Struct::getType(const std::string &slot) const {
     for (const auto &s : slots) {
         if (s.first == slot)
             return s.second;
@@ -74,7 +74,7 @@ uint32_t Struct::getOffset(const std::string &slot) const {
     return 0;
 }
 
-std::string VariableTypeToString(VariableType type) {
+std::string ValueTypeToString(ValueType type) {
     if (std::holds_alternative<Array>(type)) {
         std::ostringstream s;
 
@@ -84,7 +84,7 @@ std::string VariableTypeToString(VariableType type) {
 
         s << array.length;
 
-        auto type_name = VariableTypeToString(*array.type);
+        auto type_name = ValueTypeToString(*array.type);
 
         if (type_name != "Scalar") {
             s << ":" << type_name;
@@ -98,12 +98,12 @@ std::string VariableTypeToString(VariableType type) {
 
         auto _struct = std::get<Struct>(type);
 
-        s << "struct " << _struct.name << "{";
+        s << "Struct " << _struct.name << "{";
 
         for (auto slot : _struct.slots) {
             s << "slot " << slot.first;
 
-            auto type_name = VariableTypeToString(slot.second);
+            auto type_name = ValueTypeToString(slot.second);
 
             if (type_name != "Scalar") {
                 s << ": " << type_name;
@@ -115,6 +115,10 @@ std::string VariableTypeToString(VariableType type) {
         s << "}";
 
         return s.str();
+    } else if (std::holds_alternative<String>(type)) {
+        auto _string = std::get<String>(type);
+
+        return "String[" + std::to_string(_string.size()) + "]";
     } else {
         return "Scalar";
     }
