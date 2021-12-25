@@ -18,6 +18,9 @@ typedef std::variant<struct Struct, struct Array, struct String, SimpleType> Val
 struct String {
     std::string value;
 
+    String() : value("") {
+    }
+
     String(const std::string &value) : value(value) {
     }
 
@@ -30,7 +33,11 @@ struct String {
     }
 
     size_t size() const {
-        return value.size() + 1;
+        return value.size();
+    }
+
+    bool iSConstant() const {
+        return value.size() > 0;
     }
 };
 
@@ -275,16 +282,9 @@ class Environment {
                 return parent->defineString(value);
             } else {
                 auto lookup = "$" + value;
+                auto type = String(value);
 
-                auto existing = vars.find(lookup);
-                if (existing != vars.end()) {
-                    return existing->second.first;
-                }
-
-                int32_t next = Offset() + vars.size() + localBlocks;
-                vars.insert(std::make_pair(lookup, std::make_pair(next, String(value))));
-
-                return next;
+                return create(lookup, type, value.size() + 1); 
             }
         }
 

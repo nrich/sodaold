@@ -126,8 +126,8 @@ std::map<std::string, std::pair<OpCode, ArgType>> def = {
     {"ALLOC", {OpCode::ALLOC, ArgType::INT}},
     {"CALLOC", {OpCode::CALLOC, ArgType::NONE}},
 
-    {"FREE", {OpCode::FREE, ArgType::INT}},
-    {"FREEC", {OpCode::FREEC, ArgType::NONE}},
+    {"FREE", {OpCode::FREE, ArgType::POINTER}},
+    {"FREEIDX", {OpCode::FREEIDX, ArgType::NONE}},
 
     {"YIELD", {OpCode::YIELD, ArgType::NONE}},
 

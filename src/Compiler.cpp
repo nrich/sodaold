@@ -18,8 +18,6 @@ static const ValueType None(SimpleType::NONE);
 static const ValueType Undefined(SimpleType::UNDEFINED);
 static const ValueType Scalar(SimpleType::SCALAR);
 
-static const int32_t StackFrameSize = 32;
-
 /*
 static std::string str_toupper(std::string s) {
     std::transform(
@@ -292,7 +290,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         return Scalar;
     } else if (token.str == "free") {
         auto type = expression(cpu, asmTokens, tokens, 0);
-        uint16_t size = 0;
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         add(asmTokens, OpCode::POPIDX);
@@ -301,22 +298,15 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             error(tokens[current], "Function `free': Cannot assign a void value to parameter 1");
         } else if (std::holds_alternative<Struct>(type)) {
             auto _struct = std::get<Struct>(type);
-            size = _struct.size();
         } else if (std::holds_alternative<Array>(type)) {
             auto array = std::get<Array>(type);
-            size = array.size();
         } else if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
-            size = _string.size();
         } else {
             error(tokens[current], "Function `free': Cannot free a scalar value");
         }
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::FREE, Int16AsValue(size));
-        } else {
-            addValue32(asmTokens, OpCode::FREE, Int32AsValue(size));
-        }
+        add(asmTokens, OpCode::FREEIDX);
 
         return None;
     } else if (token.str == "getc") {
@@ -340,7 +330,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPIDX);
         add(asmTokens, OpCode::PUSHC);
 
-        return Scalar;
+        return String();
     } else if (token.str == "int") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -620,16 +610,17 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     return None;
 }
 
+static std::map<std::string, int32_t> StringTable;
+
 static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
 
     if (token.type == TokenType::STRING) {
-        //addShort(asmTokens, OpCode::ALLOC, token.str.size()+1);
-        //addString(asmTokens, OpCode::SDATA, token.str);
-        //add(asmTokens, OpCode::PUSHIDX);
-        //add(asmTokens, OpCode::POPC);
-        //add(asmTokens, OpCode::PUSHC);
-        addPointer(asmTokens, OpCode::LOADC, env->defineString(token.str));
+        auto ptr = env->defineString(token.str);
+
+        StringTable[token.str] = ptr;
+
+        addPointer(asmTokens, OpCode::SETC, ptr);
         add(asmTokens, OpCode::PUSHC);
 
         return String(token.str);
@@ -2188,5 +2179,17 @@ std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {
         }
     }
 
-    return asmTokens;
+    std::vector<AsmToken> data;
+
+    for (auto entry : StringTable) {
+        auto str = entry.first;
+        auto ptr = entry.second;
+
+        addPointer(data, OpCode::SETIDX, ptr);
+        addString(data, OpCode::SDATA, str);
+    }
+
+    data.insert(data.end(), asmTokens.begin(), asmTokens.end());
+
+    return data;
 }

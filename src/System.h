@@ -125,7 +125,7 @@ enum class OpCode {
     CALLOC,
 
     FREE,
-    FREEC,
+    FREEIDX,
 
     YIELD,
 
