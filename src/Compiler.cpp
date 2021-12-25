@@ -302,6 +302,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             auto array = std::get<Array>(type);
         } else if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
+
+            if (_string.isConstant())
+                error(tokens[current], "Function `free': Cannot free a constant string value");
         } else {
             error(tokens[current], "Function `free': Cannot free a scalar value");
         }
@@ -624,6 +627,14 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
         add(asmTokens, OpCode::PUSHC);
 
         return String(token.str);
+    } else if (token.type == TokenType::CHARACTER) {
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)token.str[0]));
+        } else {
+            addValue32(asmTokens, OpCode::SETC, Int32AsValue((int32_t)token.str[0]));
+        }
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.type == TokenType::INTEGER) {
         if (cpu == 16) {
             addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));

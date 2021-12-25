@@ -190,6 +190,8 @@ struct Token {
             res += "\"";
 
             return res;
+        } else if (type == TokenType::CHARACTER) {
+            return "'" + str + "'";
         }
         return str;
     }

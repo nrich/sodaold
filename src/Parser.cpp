@@ -34,6 +34,11 @@ static std::string str_toupper(std::string s) {
 }
 */
 
+static void error(int linenumber, int position, const std::string &err) {
+    std::cerr << "Parsing error on line " << linenumber << " at ppsition " << position << ": " << err << std::endl;
+    exit(-1);
+}
+
 static std::string str_tolower(std::string s) {
     std::transform(
         s.begin(), s.end(), s.begin(),
@@ -286,37 +291,44 @@ std::vector<Token> parse(const std::string &source) {
             if (tokenType != TokenType::IDENTIFIER)
                 token = keyword;
 
-            tokens.push_back(Token(tokenType, line, i-pos, token, precedence));
+            tokens.push_back(Token(tokenType, line, start-pos, token, precedence));
         } else if (source[i] == '\'') {
             int start = i++;
             std::string str;
 
-            while (source[i++] != '\'') {
-                char c = source[i-1];
+            char c = source[i++];
 
-                if (c == '\\' && source[i] == 'n') {
-                    c = '\n';
-                    i++;
-                } else if (c == '\\' && source[i] == '"') {
-                    c = '"';
-                    i++;
-                } else if (c == '\\' && source[i] == 't') {
-                    c = '\t';
-                    i++;
-                } else if (c == '\\' && source[i] == '\\') {
-                    c = '\\';
-                    i++;
-                }
+            if (c == '\n')
+                error(line, i-pos, "Unterminated character literal");
 
-                str += c;
+            if (c == '\\' && source[i] == 'n') {
+                c = '\n';
+                i++;
+            } else if (c == '\\' && source[i] == '"') {
+                c = '"';
+                i++;
+            } else if (c == '\\' && source[i] == 't') {
+                c = '\t';
+                i++;
+            } else if (c == '\\' && source[i] == '\\') {
+                c = '\\';
+                i++;
             }
 
-            tokens.push_back(Token(TokenType::CHARACTER, line, start, str));
+            if (source[i++] != '\'')
+                error(line, i-pos, "Unterminated character literal");
+
+            str += c;
+
+            tokens.push_back(Token(TokenType::CHARACTER, line, start-pos, str));
         } else if (source[i] == '"') {
             int start = i++;
             std::string str;
             while (source[i++] != '"') {
                 char c = source[i-1];
+
+                if (c == '\n')
+                    error(line, i-pos, "Unterminated string literal");
 
                 if (c == '\\' && source[i] == 'n') {
                     c = '\n';

@@ -36,7 +36,7 @@ struct String {
         return value.size();
     }
 
-    bool iSConstant() const {
+    bool isConstant() const {
         return value.size() > 0;
     }
 };
