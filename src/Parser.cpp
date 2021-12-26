@@ -263,6 +263,10 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
+                    if (keyword == "string") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "struct") {
                         tokenType = TokenType::STRUCT;
                     }

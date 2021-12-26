@@ -548,6 +548,18 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SEED);
         return None;
+    } else if (token.str == "string") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error(tokens[current], "Function `string': Cannot assign a void value to parameter 1");
+
+        if (std::holds_alternative<String>(type)) {
+            auto _string = std::get<String>(type);
+        }
+
+        return String();
     } else if (token.str == "tan") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -675,6 +687,8 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
                         error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                    } else if (std::holds_alternative<String>(paramType)) {
+                        error(tokens[current], "Function `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
                         error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
@@ -701,6 +715,8 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
                         error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                    } else if (std::holds_alternative<String>(paramType)) {
+                        error(tokens[current], "Function `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
                         error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
@@ -746,6 +762,8 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
                         error(tokens[current], "Struct `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                    } else if (std::holds_alternative<String>(paramType)) {
+                        error(tokens[current], "Struct `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
                         error(tokens[current], "Struct `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
@@ -783,6 +801,8 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (paramType != Scalar && paramType != type) {
                     if (std::holds_alternative<Array>(paramType)) {
                         error(tokens[current], "Struct `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
+                    } else if (std::holds_alternative<String>(paramType)) {
+                        error(tokens[current], "Struct `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
                     } else if (std::holds_alternative<Struct>(paramType)) {
                         auto expected = std::get<Struct>(paramType);
                         error(tokens[current], "Struct `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
@@ -1145,54 +1165,70 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
     } else if (token.type == TokenType::LEFT_BRACKET) {
         auto varType = lType;
 
-        if (!std::holds_alternative<Array>(varType))
-            error(tokens[current], "Array expected");
+        if (std::holds_alternative<Array>(varType)) {
+            auto array = std::get<Array>(varType);
 
-        auto array = std::get<Array>(varType);
+            auto type = expression(cpu, asmTokens, tokens, 0);
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
-        auto type = expression(cpu, asmTokens, tokens, 0);
-        check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
+            } else {
+                addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
+            }
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
-        } else {
-            addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
-        }
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::MUL);
+            add(asmTokens, OpCode::PUSHC);
 
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::MUL);
-        add(asmTokens, OpCode::PUSHC);
+            add(asmTokens, OpCode::POPB);
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::ADD);
+            add(asmTokens, OpCode::PUSHC);
 
-        add(asmTokens, OpCode::POPB);
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::ADD);
-        add(asmTokens, OpCode::PUSHC);
+            if (!std::holds_alternative<Array>(array.getType())) {
+                add(asmTokens, OpCode::POPIDX);
+                add(asmTokens, OpCode::IDXC);
+                add(asmTokens, OpCode::PUSHC);
 
-        if (!std::holds_alternative<Array>(array.getType())) {
+                if (tokens[current].type == TokenType::DECREMENT) {
+                    current++;
+                    if (cpu == 16) {
+                        addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+                    } else {
+                        addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
+                    }
+                    add(asmTokens, OpCode::WRITECX);
+                } else if (tokens[current].type == TokenType::INCREMENT) {
+                    current++;
+                    if (cpu == 16) {
+                        addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                    } else {
+                        addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+                    }
+                    add(asmTokens, OpCode::WRITECX);
+                }
+            }
+
+            return array.getType();
+        } else if (std::holds_alternative<String>(varType)) {
+            auto _string = std::get<String>(varType);
+
+            auto type = expression(cpu, asmTokens, tokens, 0);
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+            add(asmTokens, OpCode::POPB);
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::ADD);
+            add(asmTokens, OpCode::PUSHC);
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::IDXC);
             add(asmTokens, OpCode::PUSHC);
 
-            if (tokens[current].type == TokenType::DECREMENT) {
-                current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-                }
-                add(asmTokens, OpCode::WRITECX);
-            } else if (tokens[current].type == TokenType::INCREMENT) {
-                current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-                }
-                add(asmTokens, OpCode::WRITECX);
-            }
+            return Scalar;
+        } else {
+            error(tokens[current], "Array or string expected");
         }
-
-        return array.getType();
     } else if (token.type == TokenType::ACCESSOR) {
         auto varType = lType;
 
@@ -1540,42 +1576,61 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
     if (tokens[current].type == TokenType::LEFT_BRACKET) {
         current++;
 
-        if (!std::holds_alternative<Array>(containerType))
-            error(tokens[current], "Array expected");
+        if (std::holds_alternative<Array>(containerType)) {
+            auto array = std::get<Array>(containerType);
+            auto subType = array.getType();
 
-        auto array = std::get<Array>(containerType);
-        auto subType = array.getType();
-
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
-        } else {
-            addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
-        }
-
-        expression(cpu, asmTokens, tokens);
-
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::MUL);
-        add(asmTokens, OpCode::PUSHC);
-
-        add(asmTokens, OpCode::POPB);
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::ADD);
-
-        add(asmTokens, OpCode::PUSHC);
-
-        check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
-
-        if (tokens[current].type == TokenType::LEFT_BRACKET || tokens[current].type == TokenType::ACCESSOR) {
-            if (std::holds_alternative<Struct>(subType)) {
-                add(asmTokens, OpCode::POPIDX);
-                add(asmTokens, OpCode::IDXC);
-                add(asmTokens, OpCode::PUSHC);
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
+            } else {
+                addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
             }
-            return parseIndexStatement(cpu, asmTokens, tokens, subType);
-        }
 
-        return subType;
+            if (expression(cpu, asmTokens, tokens) != Scalar)
+                error(tokens[current], "Integer expected");
+
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::MUL);
+            add(asmTokens, OpCode::PUSHC);
+
+            add(asmTokens, OpCode::POPB);
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::ADD);
+
+            add(asmTokens, OpCode::PUSHC);
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+            if (tokens[current].type == TokenType::LEFT_BRACKET || tokens[current].type == TokenType::ACCESSOR) {
+                if (std::holds_alternative<Struct>(subType)) {
+                    add(asmTokens, OpCode::POPIDX);
+                    add(asmTokens, OpCode::IDXC);
+                    add(asmTokens, OpCode::PUSHC);
+                }
+                return parseIndexStatement(cpu, asmTokens, tokens, subType);
+            }
+
+            return subType;
+        } else if (std::holds_alternative<String>(containerType)) {
+            auto _string = std::get<String>(containerType);
+
+            if (_string.isConstant())
+                error(tokens[current], "Cannot modify a constant string value");
+
+            if (expression(cpu, asmTokens, tokens) != Scalar)
+                error(tokens[current], "Integer value expected");
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+
+            add(asmTokens, OpCode::POPB);
+            add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::ADD);
+            add(asmTokens, OpCode::PUSHC);
+
+            return Scalar;
+        } else {
+            error(tokens[current], "Array or string expected");
+        }
     } else if (tokens[current].type == TokenType::ACCESSOR) {
         current++;
 
@@ -1873,6 +1928,13 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
 
     if (tokens[current].type != TokenType::RIGHT_PAREN) {
+        ValueType type = Scalar;
+
+        if (tokens[current].type == TokenType::STAR) {
+            current++;
+            type = String();
+        }
+
         auto param = identifier(tokens[current++]);
         if (tokens[current].type == TokenType::COLON) {
             current++;
@@ -1902,7 +1964,6 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
             }
 
-            ValueType type = Scalar;
             if (tokens[current].type == TokenType::COLON) {
                 current++;
                 auto type_name = identifier(tokens[current++]);
@@ -1923,12 +1984,19 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
             params.push_back(std::make_pair(param, type));
         } else {
-            params.push_back(std::make_pair(param, Scalar));
+            params.push_back(std::make_pair(param, type));
         }
     }
 
     while (tokens[current].type != TokenType::RIGHT_PAREN) {
         check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        ValueType type = Scalar;
+        if (tokens[current].type == TokenType::STAR) {
+            current++;
+            type = String();
+        }
+
         auto param = identifier(tokens[current++]);
 
         if (tokens[current].type == TokenType::COLON) {
@@ -1959,7 +2027,6 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
                 check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
             }
 
-            ValueType type = Scalar;
             if (tokens[current].type == TokenType::COLON) {
                 current++;
                 auto type_name = identifier(tokens[current++]);
@@ -1980,7 +2047,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
 
             params.push_back(std::make_pair(param, type));
         } else {
-            params.push_back(std::make_pair(param, Scalar));
+            params.push_back(std::make_pair(param, type));
         }
     }
     check(tokens[current++], TokenType::RIGHT_PAREN, "`)' expected");
@@ -2042,9 +2109,16 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
     auto name = identifier(tokens[current++]);
     check(tokens[current++], TokenType::LEFT_BRACE, "`{' expected");
     check(tokens[current++], TokenType::SLOT, "`slot' expected");
-    auto slot = identifier(tokens[current++]);
 
     ValueType type = Scalar;
+
+    if (tokens[current].type == TokenType::STAR) {
+        current++;
+        type = String();
+    }
+
+    auto slot = identifier(tokens[current++]);
+
     if (tokens[current].type == TokenType::COLON) {
         current++;
 
@@ -2102,9 +2176,15 @@ static Struct define_struct(int cpu, std::vector<AsmToken> &asmTokens, const std
     slots.push_back(std::make_pair(slot, type));
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         check(tokens[current++], TokenType::SLOT, "`slot' expected");
-        auto slot = identifier(tokens[current++]);
 
         ValueType type = Scalar;
+
+        if (tokens[current].type == TokenType::STAR) {
+            current++;
+            type = String();
+        }
+
+        auto slot = identifier(tokens[current++]);
 
         if (tokens[current].type == TokenType::COLON) {
             current++;

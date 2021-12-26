@@ -25,10 +25,15 @@ struct String {
     }
 
     bool operator==(const String &rhs) const {
+        if (value.size() == 0 || rhs.value.size() == 0)
+            return true;
         return value == rhs.value;
     }
 
     bool operator!=(const String &rhs) const {
+        if (value.size() == 0 || rhs.value.size() == 0)
+            return false;
+
         return value != rhs.value;
     }
 
