@@ -560,7 +560,61 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         }
 
         return String();
+    } else if (token.str == "strlen") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error(tokens[current], "Function `string': Cannot assign a void value to parameter 1");
+
+        if (std::holds_alternative<String>(type)) {
+            auto _string = std::get<String>(type);
+
+            add(asmTokens, OpCode::POPIDX);
+
+            if (_string.size()) {
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.size()));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.size()));
+                }
+                add(asmTokens, OpCode::PUSHC);
+            } else {
+                static int STRLENs = 1;
+                int _strlen = STRLENs++;
+
+                add(asmTokens, OpCode::PUSHIDX);
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
+                } else {
+                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
+                }
+
+                add(asmTokens, OpCode::IDXA, "STRLEN_" + std::to_string(_strlen) + "_CHECK");
+                add(asmTokens, OpCode::CMP);
+                add(asmTokens, OpCode::JMPEZ, "STRLEN_" + std::to_string(_strlen) + "_FALSE");
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+                }
+                add(asmTokens, OpCode::JMP, "STRLEN_" + std::to_string(_strlen) + "_CHECK");
+
+                add(asmTokens, OpCode::PUSHIDX, "STRLEN_" + std::to_string(_strlen) + "_FALSE");
+                add(asmTokens, OpCode::POPA);
+                add(asmTokens, OpCode::POPB);
+                add(asmTokens, OpCode::SUB);
+
+                add(asmTokens, OpCode::PUSHC);
+            }
+        } else {
+            error(tokens[current], "Function `strlen': String value expected for parameter 1");
+        }
+
+        return Scalar;
     } else if (token.str == "tan") {
+
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
