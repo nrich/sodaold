@@ -118,7 +118,7 @@ std::string ValueTypeToString(ValueType type) {
     } else if (std::holds_alternative<String>(type)) {
         auto _string = std::get<String>(type);
 
-        return "String[" + std::to_string(_string.size()) + "]";
+        return "String[" + std::to_string(_string.literal.size()) + "]";
     } else {
         return "Scalar";
     }

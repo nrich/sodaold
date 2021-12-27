@@ -302,9 +302,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             auto array = std::get<Array>(type);
         } else if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
-
-            if (_string.isConstant())
-                error(tokens[current], "Function `free': Cannot free a constant string value");
         } else {
             error(tokens[current], "Function `free': Cannot free a scalar value");
         }
@@ -572,11 +569,11 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
             add(asmTokens, OpCode::POPIDX);
 
-            if (_string.size()) {
+            if (_string.literal.size()) {
                 if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.size()));
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.size()));
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
                 }
                 add(asmTokens, OpCode::PUSHC);
             } else {
@@ -679,7 +676,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     return None;
 }
 
-static std::map<std::string, int32_t> StringTable;
+static std::vector<std::pair<std::string, int32_t>> StringTable;
 
 static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
@@ -687,7 +684,7 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
     if (token.type == TokenType::STRING) {
         auto ptr = env->defineString(token.str);
 
-        StringTable[token.str] = ptr;
+        StringTable.push_back(std::make_pair(token.str, ptr));
 
         addPointer(asmTokens, OpCode::SETC, ptr);
         add(asmTokens, OpCode::PUSHC);
@@ -1668,9 +1665,6 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
         } else if (std::holds_alternative<String>(containerType)) {
             auto _string = std::get<String>(containerType);
 
-            if (_string.isConstant())
-                error(tokens[current], "Cannot modify a constant string value");
-
             if (expression(cpu, asmTokens, tokens) != Scalar)
                 error(tokens[current], "Integer value expected");
 
@@ -2308,7 +2302,7 @@ std::vector<AsmToken> compile(const int cpu, const std::vector<Token> &tokens) {
 
     env = Environment::createGlobal(0);
 
-    addPointer(asmTokens, OpCode::SETC, 0);
+    //addPointer(asmTokens, OpCode::SETC, 0);
 
     while (current < tokens.size()) {
         auto token = tokens[current];

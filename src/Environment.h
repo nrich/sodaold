@@ -16,33 +16,24 @@ enum class SimpleType {
 typedef std::variant<struct Struct, struct Array, struct String, SimpleType> ValueType;
 
 struct String {
-    std::string value;
+    std::string literal;
+    size_t allocated;
 
-    String() : value("") {
+    String() : literal(""), allocated(0) {
     }
 
-    String(const std::string &value) : value(value) {
+    String(const std::string &value) : literal(value), allocated(value.size()+1) {
+    }
+
+    String(size_t allocated) : literal(""), allocated(allocated) {
     }
 
     bool operator==(const String &rhs) const {
-        if (value.size() == 0 || rhs.value.size() == 0)
-            return true;
-        return value == rhs.value;
+        return true;
     }
 
     bool operator!=(const String &rhs) const {
-        if (value.size() == 0 || rhs.value.size() == 0)
-            return false;
-
-        return value != rhs.value;
-    }
-
-    size_t size() const {
-        return value.size();
-    }
-
-    bool isConstant() const {
-        return value.size() > 0;
+        return false;
     }
 };
 
@@ -286,12 +277,11 @@ class Environment {
             if (parent) {
                 return parent->defineString(value);
             } else {
-                auto lookup = "$" + value;
-                auto type = String(value);
-
-                return create(lookup, type, value.size() + 1); 
+                int32_t next = Offset() + vars.size() + localBlocks;
+                localBlocks += value.size() + 1;
+                return next;
             }
-        }
+       }
 
         uint32_t set(const std::string &name, ValueType type) {
             auto found = vars.find(name);
