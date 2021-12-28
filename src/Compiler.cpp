@@ -557,6 +557,58 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         }
 
         return String();
+
+    } else if (token.str == "strcmp") {
+        auto ltype = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        if (ltype == None || ltype == Undefined)
+            error(tokens[current], "Function `strcmp': Cannot assign a void value to parameter 1");
+
+        if (!std::holds_alternative<String>(ltype))
+            error(tokens[current], "Function `strcmp': String value expected for parameter 1");
+
+        auto rtype = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (rtype == None || rtype == Undefined)
+            error(tokens[current], "Function `strcmp': Cannot assign a void value to parameter 2");
+
+        if (!std::holds_alternative<String>(rtype))
+            error(tokens[current], "Function `strcmp': String value expected for parameter 2");
+
+        static int STRCMPs = 1;
+        int _strcmp = STRCMPs++;
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::PUSHA);
+        add(asmTokens, OpCode::POPIDX);
+
+        add(asmTokens, OpCode::EQ);
+        add(asmTokens, OpCode::NOT);
+        add(asmTokens, OpCode::JMPEZ, "STRCMP_" + std::to_string(_strcmp) + "_DONE");
+
+        add(asmTokens, OpCode::CMP, "STRCMP_" + std::to_string(_strcmp) + "_CMP");
+        add(asmTokens, OpCode::JMPNZ, "STRCMP_" + std::to_string(_strcmp) + "_DONE");
+
+        add(asmTokens, OpCode::IDXC);
+        add(asmTokens, OpCode::JMPEZ, "STRCMP_" + std::to_string(_strcmp) + "_DONE");
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+            addValue16(asmTokens, OpCode::INCA, Int16AsValue(1));
+            addValue16(asmTokens, OpCode::INCB, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+            addValue32(asmTokens, OpCode::INCA, Int32AsValue(1));
+            addValue32(asmTokens, OpCode::INCB, Int32AsValue(1));
+        }
+
+        add(asmTokens, OpCode::JMP, "STRCMP_" + std::to_string(_strcmp) + "_CMP");
+
+        add(asmTokens, OpCode::PUSHC, "STRCMP_" + std::to_string(_strcmp) + "_DONE");
+        return Scalar;
     } else if (token.str == "strcpy") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
