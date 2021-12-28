@@ -545,19 +545,195 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SEED);
         return None;
-    } else if (token.str == "string") {
-        auto type = expression(cpu, asmTokens, tokens, 0);
-        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+    } else if (token.str == "strcat") {
+        auto ltype = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
 
-        if (type == None || type == Undefined)
-            error(tokens[current], "Function `string': Cannot assign a void value to parameter 1");
+        static int STRCATs = 1;
 
-        if (std::holds_alternative<String>(type)) {
-            auto _string = std::get<String>(type);
+        if (ltype == None || ltype == Undefined)
+            error(tokens[current], "Function `strcat': Cannot assign a void value to parameter 1");
+
+        if (std::holds_alternative<String>(ltype)) {
+            auto _string = std::get<String>(ltype);
+
+            add(asmTokens, OpCode::POPIDX);
+
+            if (_string.literal.size()) {
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
+                }
+                add(asmTokens, OpCode::PUSHC);
+                add(asmTokens, OpCode::PUSHIDX);
+            } else {
+                int _strcat = STRCATs++;
+
+                add(asmTokens, OpCode::PUSHIDX);
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
+                } else {
+                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
+                }
+
+                add(asmTokens, OpCode::IDXA, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
+                add(asmTokens, OpCode::CMP);
+                add(asmTokens, OpCode::JMPEZ, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+                }
+                add(asmTokens, OpCode::JMP, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
+
+                add(asmTokens, OpCode::PUSHIDX, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
+                add(asmTokens, OpCode::POPA);
+                add(asmTokens, OpCode::POPB);
+                add(asmTokens, OpCode::SUB);
+
+                add(asmTokens, OpCode::PUSHC);
+                add(asmTokens, OpCode::PUSHB, "STRCAT_" + std::to_string(_strcat) + "_SAVEIDX");
+            }
+        } else {
+            error(tokens[current], "Function `strcat': String value expected for parameter 1");
         }
 
-        return String();
+        auto rtype = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
+        if (rtype == None || rtype == Undefined)
+            error(tokens[current], "Function `strcat': Cannot assign a void value to parameter 2");
+
+        if (std::holds_alternative<String>(rtype)) {
+            auto _string = std::get<String>(rtype);
+
+            add(asmTokens, OpCode::POPIDX);
+
+            if (_string.literal.size()) {
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
+                }
+                add(asmTokens, OpCode::PUSHC);
+                add(asmTokens, OpCode::PUSHIDX);
+            } else {
+                int _strcat = STRCATs++;
+
+                add(asmTokens, OpCode::PUSHIDX);
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
+                } else {
+                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
+                }
+
+                add(asmTokens, OpCode::IDXA, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
+                add(asmTokens, OpCode::CMP);
+                add(asmTokens, OpCode::JMPEZ, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+                }
+                add(asmTokens, OpCode::JMP, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
+
+                add(asmTokens, OpCode::PUSHIDX, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
+                add(asmTokens, OpCode::POPA);
+                add(asmTokens, OpCode::POPB);
+                add(asmTokens, OpCode::SUB);
+
+                add(asmTokens, OpCode::PUSHC);
+                add(asmTokens, OpCode::PUSHB, "STRCAT_" + std::to_string(_strcat) + "_SAVEIDX");
+            }
+        } else {
+            error(tokens[current], "Function `strcat': String value expected for parameter 2");
+        }
+
+        // A = LEN L, B = LEN R, C = L, IDX = R
+        add(asmTokens, OpCode::POPIDX);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPB);
+
+        // STACK = [L,R]
+        add(asmTokens, OpCode::PUSHIDX);
+        add(asmTokens, OpCode::PUSHC);
+
+        add(asmTokens, OpCode::ADD);
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+        }
+
+        add(asmTokens, OpCode::CALLOC);
+
+        // A = LEN L, B = LEN R, C = LEN N, IDX = N
+
+        add(asmTokens, OpCode::PUSHA);
+        // STACK = [LEN L,L,R]
+
+        add(asmTokens, OpCode::POPC);
+        // A = LEN L, B = LEN R, C = LEN L, IDX = N
+        // STACK = [L,R]
+
+        add(asmTokens, OpCode::POPA);
+        // A = L, B = LEN R, C = LEN L, IDX = N
+        // STACK = [R]
+
+        add(asmTokens, OpCode::PUSHB);
+        // STACK = [LEN R,R]
+
+        add(asmTokens, OpCode::PUSHA);
+        // STACK = [L, LEN R,R]
+
+        add(asmTokens, OpCode::POPB);
+        // A = L, B = L, C = LEN L, IDX = N
+        // STACK = [LEN R,R]
+
+        add(asmTokens, OpCode::PUSHIDX);
+        // STACK = [N,LEN R,R]
+
+        add(asmTokens, OpCode::POPA);
+        // A = N, B = L, C = LEN L, IDX = N
+        // STACK = [LEN R,R]
+
+        add(asmTokens, OpCode::COPY);
+
+        add(asmTokens, OpCode::PUSHC);
+        // STACK = [LEN L,LEN R,R]
+
+        add(asmTokens, OpCode::POPB);
+        // A = N, B = LEN L, C = LEN L, IDX = N
+        // STACK = [LEN R,R]
+
+        add(asmTokens, OpCode::ADD);
+        // A = N, B = LEN L, C = N+L, IDX = N
+
+        add(asmTokens, OpCode::PUSHC);
+        // STACK = [N+L,LEN R,R]
+
+        add(asmTokens, OpCode::POPA);
+        // A = N+L, B = LEN L, C = N+L, IDX = N
+        // STACK = [LEN R,R]
+
+        add(asmTokens, OpCode::POPC);
+        // A = N+L, B = LEN L, C = LEN R, IDX = N
+        // STACK = [R]
+
+        add(asmTokens, OpCode::POPB);
+        // A = N+L, B = R, C = LEN R, IDX = N
+        // STACK = []
+
+        add(asmTokens, OpCode::COPY);
+
+        add(asmTokens, OpCode::PUSHIDX);
+        // STACK = [N]
+
+        return String();
     } else if (token.str == "strcmp") {
         auto ltype = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current++], TokenType::COMMA, "`,' expected");
@@ -669,6 +845,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::CALLOC);
             add(asmTokens, OpCode::PUSHIDX);
             add(asmTokens, OpCode::POPA);
+            add(asmTokens, OpCode::POPC);
 
             add(asmTokens, OpCode::COPY);
 
@@ -678,7 +855,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         }
 
         return String();
-
     } else if (token.str == "strlen") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -733,7 +909,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
         return Scalar;
     } else if (token.str == "tan") {
-
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
