@@ -127,6 +127,8 @@ enum class OpCode {
     FREE,
     FREEIDX,
 
+    COPY,
+
     YIELD,
 
     TRACE,

@@ -267,6 +267,10 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
+                    if (keyword == "strcpy") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "strlen") {
                         tokenType = TokenType::BUILTIN;
                     }
