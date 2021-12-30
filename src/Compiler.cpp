@@ -380,6 +380,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             error(token, "Function `make': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::CALLOC);
+        add(asmTokens, OpCode::PUSHIDX);
         return Scalar;
     } else if (token.str == "max") {
         static int MAXs = 1;
@@ -862,6 +863,16 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             error(tokens[current], "Function `strcpy': String value expected for parameter 1");
         }
 
+        return String();
+    } else if (token.str == "string") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None)
+            error(token, "Function `make': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::CALLOC);
+        add(asmTokens, OpCode::PUSHIDX);
         return String();
     } else if (token.str == "strlen") {
         auto type = expression(cpu, asmTokens, tokens, 0);
