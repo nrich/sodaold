@@ -130,7 +130,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `abs': Cannot assign a void value to parameter 1");
+            error(token, "Function `abs': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPA);
         if (cpu == 16) {
@@ -149,7 +149,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `atan': Cannot assign a void value to parameter 1");
+            error(token, "Function `atan': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::ATAN);
@@ -164,7 +164,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `cos': Cannot assign a void value to parameter 1");
+            error(token, "Function `cos': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::COS);
@@ -191,6 +191,10 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         for (int i = 0; i < DrawBoxArgs; i++) {
             add(asmTokens, OpCode::PUSHIDX);
             auto type = expression(cpu, asmTokens, tokens, 0);
+
+            if (type == None || type == Undefined)
+                error(token, "Function `drawbox': Cannot assign a void value to parameter " + std::to_string(i+1));
+
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
@@ -233,6 +237,10 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         for (int i = 0; i < DrawLineArgs; i++) {
             add(asmTokens, OpCode::PUSHIDX);
             auto type = expression(cpu, asmTokens, tokens, 0);
+
+            if (type == None || type == Undefined)
+                error(token, "Function `drawline': Cannot assign a void value to parameter " + std::to_string(i+1));
+
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
@@ -265,11 +273,11 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (x_type == None || x_type == Undefined)
-            error(tokens[current], "Function `sdrawpixel': Cannot assign a void value to parameter 1");
+            error(token, "Function `drawpixel': Cannot assign a void value to parameter 1");
         if (y_type == None || y_type == Undefined)
-            error(tokens[current], "Function `drawpixel': Cannot assign a void value to parameter 2");
+            error(token, "Function `drawpixel': Cannot assign a void value to parameter 2");
         if (c_type == None || c_type == Undefined)
-            error(tokens[current], "Function `drawpixel': Cannot assign a void value to parameter 3");
+            error(token, "Function `drawpixel': Cannot assign a void value to parameter 3");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::POPB);
@@ -282,7 +290,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `float': Cannot assign a void value to parameter 1");
+            error(token, "Function `float': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::FLT);
@@ -295,7 +303,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPIDX);
 
         if (type == None || type == Undefined) {
-            error(tokens[current], "Function `free': Cannot assign a void value to parameter 1");
+            error(token, "Function `free': Cannot assign a void value to parameter 1");
         } else if (std::holds_alternative<Struct>(type)) {
             auto _struct = std::get<Struct>(type);
         } else if (std::holds_alternative<Array>(type)) {
@@ -303,7 +311,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         } else if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
         } else {
-            error(tokens[current], "Function `free': Cannot free a scalar value");
+            error(token, "Function `free': Cannot free a scalar value");
         }
 
         add(asmTokens, OpCode::FREEIDX);
@@ -319,7 +327,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error(tokens[current], "Function `gets': Cannot assign a void value to parameter 1");
+            error(token, "Function `gets': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHIDX);
@@ -336,7 +344,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `int': Cannot assign a void value to parameter 1");
+            error(token, "Function `int': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::INT);
@@ -347,7 +355,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `keypressed': Cannot assign a void value to parameter 1");
+            error(token, "Function `keypressed': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::KEYSET, RuntimeValue::C);
@@ -358,7 +366,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `log': Cannot assign a void value to parameter 1");
+            error(token, "Function `log': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::LOG);
@@ -369,7 +377,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error(tokens[current], "Function `make': Cannot assign a void value to parameter 1");
+            error(token, "Function `make': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::CALLOC);
         return Scalar;
@@ -386,9 +394,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error(tokens[current], "Function `max': Cannot assign a void value to parameter 1");
+            error(token, "Function `max': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error(tokens[current], "Function `max': Cannot assign a void value to parameter 2");
+            error(token, "Function `max': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -412,9 +420,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error(tokens[current], "Function `min': Cannot assign a void value to parameter 1");
+            error(token, "Function `min': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error(tokens[current], "Function `min': Cannot assign a void value to parameter 2");
+            error(token, "Function `min': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -430,7 +438,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error(tokens[current], "Function `puts': Cannot assign a void value to parameter 1");
+            error(token, "Function `puts': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::WRITE, RuntimeValue::C);
@@ -454,9 +462,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error(tokens[current], "Function `setcolours': Cannot assign a void value to parameter 1");
+            error(token, "Function `setcolours': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error(tokens[current], "Function `setcolours': Cannot assign a void value to parameter 2");
+            error(token, "Function `setcolours': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -470,9 +478,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (left_type == None || left_type == Undefined)
-            error(tokens[current], "Function `setcursor': Cannot assign a void value to parameter 1");
+            error(token, "Function `setcursor': Cannot assign a void value to parameter 1");
         if (right_type == None || right_type == Undefined)
-            error(tokens[current], "Function `setcursor': Cannot assign a void value to parameter 2");
+            error(token, "Function `setcursor': Cannot assign a void value to parameter 2");
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -484,7 +492,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `setpalette': Cannot assign a void value to parameter 1");
+            error(token, "Function `setpalette': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::PALETTE, RuntimeValue::C);
@@ -494,7 +502,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `sin': Cannot assign a void value to parameter 1");
+            error(token, "Function `sin': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SIN);
@@ -511,11 +519,11 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (frequency_type == None || frequency_type == Undefined)
-            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 1");
+            error(token, "Function `sound': Cannot assign a void value to parameter 1");
         if (duration_type == None || duration_type == Undefined)
-            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 2");
+            error(token, "Function `sound': Cannot assign a void value to parameter 2");
         if (voice_type == None || voice_type == Undefined)
-            error(tokens[current], "Function `sound': Cannot assign a void value to parameter 3");
+            error(token, "Function `sound': Cannot assign a void value to parameter 3");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::POPB);
@@ -529,7 +537,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `sqrt': Cannot assign a void value to parameter 1");
+            error(token, "Function `sqrt': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SQR);
@@ -540,7 +548,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `srand': Cannot assign a void value to parameter 1");
+            error(token, "Function `srand': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::SEED);
@@ -552,7 +560,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         static int STRCATs = 1;
 
         if (ltype == None || ltype == Undefined)
-            error(tokens[current], "Function `strcat': Cannot assign a void value to parameter 1");
+            error(token, "Function `strcat': Cannot assign a void value to parameter 1");
 
         if (std::holds_alternative<String>(ltype)) {
             auto _string = std::get<String>(ltype);
@@ -597,7 +605,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
                 add(asmTokens, OpCode::PUSHB, "STRCAT_" + std::to_string(_strcat) + "_SAVEIDX");
             }
         } else {
-            error(tokens[current], "Function `strcat': String value expected for parameter 1");
+            error(token, "Function `strcat': String value expected for parameter 1");
         }
 
         auto rtype = expression(cpu, asmTokens, tokens, 0);
@@ -649,7 +657,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
                 add(asmTokens, OpCode::PUSHB, "STRCAT_" + std::to_string(_strcat) + "_SAVEIDX");
             }
         } else {
-            error(tokens[current], "Function `strcat': String value expected for parameter 2");
+            error(token, "Function `strcat': String value expected for parameter 2");
         }
 
         // A = LEN L, B = LEN R, C = L, IDX = R
@@ -739,19 +747,19 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current++], TokenType::COMMA, "`,' expected");
 
         if (ltype == None || ltype == Undefined)
-            error(tokens[current], "Function `strcmp': Cannot assign a void value to parameter 1");
+            error(token, "Function `strcmp': Cannot assign a void value to parameter 1");
 
         if (!std::holds_alternative<String>(ltype))
-            error(tokens[current], "Function `strcmp': String value expected for parameter 1");
+            error(token, "Function `strcmp': String value expected for parameter 1");
 
         auto rtype = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (rtype == None || rtype == Undefined)
-            error(tokens[current], "Function `strcmp': Cannot assign a void value to parameter 2");
+            error(token, "Function `strcmp': Cannot assign a void value to parameter 2");
 
         if (!std::holds_alternative<String>(rtype))
-            error(tokens[current], "Function `strcmp': String value expected for parameter 2");
+            error(token, "Function `strcmp': String value expected for parameter 2");
 
         static int STRCMPs = 1;
         int _strcmp = STRCMPs++;
@@ -790,7 +798,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `strcpy': Cannot assign a void value to parameter 1");
+            error(token, "Function `strcpy': Cannot assign a void value to parameter 1");
 
         if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
@@ -860,7 +868,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None || type == Undefined)
-            error(tokens[current], "Function `strlen': Cannot assign a void value to parameter 1");
+            error(token, "Function `strlen': Cannot assign a void value to parameter 1");
 
         if (std::holds_alternative<String>(type)) {
             auto _string = std::get<String>(type);
@@ -904,7 +912,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
                 add(asmTokens, OpCode::PUSHC);
             }
         } else {
-            error(tokens[current], "Function `strlen': String value expected for parameter 1");
+            error(token, "Function `strlen': String value expected for parameter 1");
         }
 
         return Scalar;
@@ -968,7 +976,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::YIELD);
         return None;
     } else {
-        error(tokens[current], "Unknown function `" + token.str + "'");
+        error(token, "Unknown function `" + token.str + "'");
     }
     return None;
 }
