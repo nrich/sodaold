@@ -1343,6 +1343,18 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         return type;
+    } else if (tokens[current].type == TokenType::LESS) {
+        current++;
+        auto name = identifier(tokens[current++]);
+        auto _struct = env->getStruct(name);
+        check(tokens[current++], TokenType::GREATER, "`>' expected");
+
+        auto type = prefix(cpu, asmTokens, tokens, rbp);
+        return _struct;
+    } else if (tokens[current].type == TokenType::STAR) {
+        current++;
+        auto type = prefix(cpu, asmTokens, tokens, rbp);
+        return String();
     } else if (tokens[current].type == TokenType::NOT) {
         current++;
         auto type = prefix(cpu, asmTokens, tokens, rbp);
