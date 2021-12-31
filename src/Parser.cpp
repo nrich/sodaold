@@ -215,6 +215,10 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "min") {
                         tokenType = TokenType::BUILTIN;
                     }
+                    else
+                    if (keyword == "mouse") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 'p':
                     if (keyword == "puts") {

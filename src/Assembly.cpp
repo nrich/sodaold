@@ -168,6 +168,8 @@ static std::pair<std::string, std::string> getSysCall(SysCall syscall, RuntimeVa
         syscallname = "SOUND";
     } else if (syscall == SysCall::VOICE) {
         syscallname = "VOICE";
+    } else if (syscall == SysCall::MOUSE) {
+        syscallname = "MOUSE";
     } else {
         throw std::domain_error("Unknown SysCall");
     }

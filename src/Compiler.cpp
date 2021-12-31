@@ -434,6 +434,35 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::PUSHA, "MIN_" + std::to_string(_min) + "_TRUE");
         return Scalar;
+    } else if (token.str == "mouse") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::MOUSE, RuntimeValue::NONE);
+
+        addShort(asmTokens, OpCode::ALLOC, 3);
+        add(asmTokens, OpCode::PUSHIDX);
+
+        add(asmTokens, OpCode::WRITEAX);
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+        }
+
+        add(asmTokens, OpCode::WRITEBX);
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
+        }
+
+        add(asmTokens, OpCode::WRITECX);
+
+        add(asmTokens, OpCode::POPIDX);
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        return Array(Scalar, 3, 1);
     } else if (token.str == "puts") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");

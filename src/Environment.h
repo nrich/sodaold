@@ -92,6 +92,7 @@ class Environment {
         const std::string functionName;
 
         int localBlocks = 0;
+        int32_t stringTableOffset = 256;
         Environment(int32_t offset) : parent(NULL), offset(offset), functionName("") {
         }
 
@@ -277,8 +278,10 @@ class Environment {
             if (parent) {
                 return parent->defineString(value);
             } else {
-                int32_t next = Offset() + vars.size() + localBlocks;
-                localBlocks += value.size() + 1;
+                //int32_t next = Offset() + vars.size() + localBlocks;
+                //localBlocks += value.size() + 1;
+                int32_t next = stringTableOffset;
+                stringTableOffset += value.size() + 1;
                 return next;
             }
        }

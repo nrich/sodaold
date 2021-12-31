@@ -161,6 +161,7 @@ enum class SysCall {
     BLIT,
     SOUND,
     VOICE,
+    MOUSE,
     COUNT
 };
 
