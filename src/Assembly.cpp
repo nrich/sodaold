@@ -312,3 +312,42 @@ std::string AsmToken::toString() const {
 
     return s.str();
 }
+
+std::vector<AsmToken> optimise(const int cpu, const std::vector<AsmToken> &asmTokens) {
+    std::vector<AsmToken> output;
+
+    size_t current = 0;
+
+    auto NOP = AsmToken(OpCode::NOP);
+    auto MOVCA = AsmToken(OpCode::MOVCA);
+    auto MOVCB = AsmToken(OpCode::MOVCB);
+    auto MOVCIDX = AsmToken(OpCode::MOVIDX);
+
+    while (current < asmTokens.size()) {
+        auto asmToken = asmTokens[current++];
+        if (asmToken.iSNone()) {
+            auto next = asmTokens[current++];
+
+            if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPC) {
+                output.push_back(NOP);
+                output.push_back(NOP);
+            } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPA) {
+                output.push_back(MOVCA);
+                output.push_back(NOP);
+            } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPB) {
+                output.push_back(MOVCB);
+                output.push_back(NOP);
+            } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPIDX) {
+                output.push_back(MOVCIDX);
+                output.push_back(NOP);
+            } else {
+                output.push_back(asmToken);
+                output.push_back(next);
+            }
+        } else {
+            output.push_back(asmToken);
+        }
+    }
+
+    return output;
+}

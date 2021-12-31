@@ -54,9 +54,38 @@ struct AsmToken {
     AsmToken(OpCode opcode, std::pair<SysCall, RuntimeValue> syscall) : opcode(opcode), arg(syscall) {
     }
 
+    bool iSNone() const {
+        return arg == std::nullopt;
+    }
+
+    bool iSShort() const {
+        return std::holds_alternative<int16_t>(*arg);
+    }
+
+    bool iSFloat() const {
+        return std::holds_alternative<float>(*arg);
+    }
+
+    bool iSPointer() const {
+        return std::holds_alternative<int32_t>(*arg);
+    }
+
+    bool iSValue() const {
+        return std::holds_alternative<uint32_t>(*arg) || std::holds_alternative<uint64_t>(*arg);
+    }
+
+    bool iSString() const {
+        return std::holds_alternative<std::string>(*arg);
+    }
+
+    bool iSSysCall() const {
+        return std::holds_alternative<std::pair<SysCall, RuntimeValue>>(*arg);
+    }
+
     size_t size() const;
     std::string toString() const;
 };
 
+std::vector<AsmToken> optimise(const int cpu, const std::vector<AsmToken> &asmTokens);
 
 #endif //__ASSEMBLY_H__

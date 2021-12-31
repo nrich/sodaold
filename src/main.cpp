@@ -57,6 +57,15 @@ int main(int argc, char **argv) {
         "-s"     // Flag token.
     );
 
+    opt.add(
+        "", // Default.
+        0, // Required?
+        0, // Number of args expected.
+        0, // Delimiter if expecting multiple args.
+        "optimise output", // Help description.
+        "-O"     // Flag token.
+    );
+
     opt.parse(argc, (const char**)argv);
 
     if (opt.isSet("-h")) {
@@ -81,12 +90,12 @@ int main(int argc, char **argv) {
     buffer << infile.rdbuf();
 
     auto tokens = parse(buffer.str());
-    //for (auto token : tokens) {
-    //    std::cerr << token.toString() << std::endl;
-    //}
-
     auto asmTokens = compile(cpu, tokens);
-    std::cerr << asmTokens.size() << std::endl;
+
+    if (opt.isSet("-O")) {
+        asmTokens = optimise(cpu, asmTokens);
+    }
+
     for (const auto token : asmTokens) {
         std::cout << token.toString() << std::endl;
     }
