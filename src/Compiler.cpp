@@ -987,6 +987,59 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         }
 
         return Scalar;
+    } else if (token.str == "substr") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+
+        if (type == None || type == Undefined)
+            error(token, "Function `substr': Cannot assign a void value to parameter 1");
+
+        if (!std::holds_alternative<String>(type))
+            error(tokens[current], "Function `substr': String value expected for parameter 1");
+
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto begin = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        if (begin == None || begin == Undefined)
+            error(token, "Function `substr': Cannot assign a void value to parameter 2");
+
+        auto len = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (len == None || len == Undefined)
+            error(token, "Function `strcmp': Cannot assign a void value to parameter 3");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::PUSHC);
+
+        if (cpu == 16) {
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+        } else {
+            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
+        }
+
+        add(asmTokens, OpCode::CALLOC);
+        add(asmTokens, OpCode::POPC);
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+
+        add(asmTokens, OpCode::PUSHC);
+        add(asmTokens, OpCode::ADD);
+
+        add(asmTokens, OpCode::PUSHC);
+        add(asmTokens, OpCode::POPB);
+
+        add(asmTokens, OpCode::PUSHIDX);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::POPC);
+
+        add(asmTokens, OpCode::COPY);
+
+        add(asmTokens, OpCode::PUSHIDX);
+
+        return String();
     } else if (token.str == "tan") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");

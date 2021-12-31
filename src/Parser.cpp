@@ -302,6 +302,10 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "struct") {
                         tokenType = TokenType::STRUCT;
                     }
+                    else
+                    if (keyword == "substr") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 't':
                     if (keyword == "tan") {
