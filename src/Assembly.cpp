@@ -61,6 +61,7 @@ std::map<std::string, std::pair<OpCode, ArgType>> def = {
     {"DIV", {OpCode::DIV, ArgType::NONE}},
     {"IDIV", {OpCode::IDIV, ArgType::NONE}},
     {"MOD", {OpCode::MOD, ArgType::NONE}},
+    {"POW", {OpCode::POW, ArgType::NONE}},
     {"EXP", {OpCode::EXP, ArgType::NONE}},
 
     {"LSHIFT", {OpCode::LSHIFT, ArgType::NONE}},

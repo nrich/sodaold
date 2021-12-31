@@ -158,6 +158,10 @@ std::vector<Token> parse(const std::string &source) {
                     if (keyword == "else") {
                         tokenType = TokenType::ELSE;
                     }
+                    else
+                    if (keyword == "exp") {
+                        tokenType = TokenType::BUILTIN;
+                    }
                     break;
                 case 'f':
                     if (keyword == "float") {
@@ -221,6 +225,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'p':
+                    if (keyword == "pow") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "puts") {
                         tokenType = TokenType::BUILTIN;
                     }

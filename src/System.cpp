@@ -43,6 +43,7 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::DIV: return "DIV";
         case OpCode::IDIV: return "IDIV";
         case OpCode::MOD: return "MOD";
+        case OpCode::POW: return "POW";
         case OpCode::EXP: return "EXP";
         case OpCode::LSHIFT: return "LSHIFT";
         case OpCode::RSHIFT: return "RSHIFT";

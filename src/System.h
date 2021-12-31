@@ -59,6 +59,7 @@ enum class OpCode {
     DIV,
     IDIV,
     MOD,
+    POW,
     EXP,
 
     LSHIFT,

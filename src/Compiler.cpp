@@ -285,6 +285,17 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::DRAW, RuntimeValue::NONE);
         return None;
+    } else if (token.str == "exp") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (type == None || type == Undefined)
+            error(token, "Function `exp': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::EXP);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.str == "float") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -463,6 +474,26 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHIDX);
 
         return Array(Scalar, 3, 1);
+    } else if (token.str == "pow") {
+        auto left_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current++], TokenType::COMMA, "`,' expected");
+
+        auto right_type = expression(cpu, asmTokens, tokens, 0);
+
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+
+        if (left_type == None || left_type == Undefined)
+            error(token, "Function `pow': Cannot assign a void value to parameter 1");
+        if (right_type == None || right_type == Undefined)
+            error(token, "Function `pow': Cannot assign a void value to parameter 2");
+
+        add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPA);
+        add(asmTokens, OpCode::POW);
+
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.str == "puts") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
