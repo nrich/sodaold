@@ -99,17 +99,19 @@ int main(int argc, char **argv) {
 
         if (opt.isSet("-o")) {
             opt.get("-o")->getString(filename);
-        } else {
-            filename = "a.asm";
-        }
 
-        std::ofstream ofs(filename);
+            std::ofstream ofs(filename);
         
-        for (const auto token : asmTokens) {
-            ofs << token.toString() << std::endl;
-        }
+            for (const auto token : asmTokens) {
+                ofs << token.toString() << std::endl;
+            }
 
-        ofs.close();
+            ofs.close();
+        } else {
+            for (const auto token : asmTokens) {
+                std::cout << token.toString() << std::endl;
+            }
+        }
     } else {
         std::string filename;
 

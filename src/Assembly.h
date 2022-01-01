@@ -70,6 +70,12 @@ struct AsmToken {
         return std::holds_alternative<std::pair<SysCall, RuntimeValue>>(*arg);
     }
 
+    AsmToken &setLabel(std::string _label) {
+        label = _label;
+
+        return *this;
+    }
+
     size_t size() const;
     std::string toString() const;
 };

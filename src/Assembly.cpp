@@ -188,28 +188,23 @@ std::vector<AsmToken> optimise(const int cpu, const std::vector<AsmToken> &asmTo
 
     size_t current = 0;
 
-    auto NOP = AsmToken(OpCode::NOP);
-    auto MOVCA = AsmToken(OpCode::MOVCA);
-    auto MOVCB = AsmToken(OpCode::MOVCB);
-    auto MOVCIDX = AsmToken(OpCode::MOVIDX);
-
     while (current < asmTokens.size()) {
         auto asmToken = asmTokens[current++];
-        if (asmToken.isNone()) {
+        if (asmToken.isNone() && current < asmTokens.size()) {
             auto next = asmTokens[current++];
 
             if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPC) {
-                output.push_back(NOP);
-                output.push_back(NOP);
+                output.push_back(AsmToken(OpCode::NOP).setLabel(asmToken.label));
+                output.push_back(AsmToken(OpCode::NOP).setLabel(next.label));
             } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPA) {
-                output.push_back(MOVCA);
-                output.push_back(NOP);
+                output.push_back(AsmToken(OpCode::MOVCA).setLabel(asmToken.label));
+                output.push_back(AsmToken(OpCode::NOP).setLabel(next.label));
             } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPB) {
-                output.push_back(MOVCB);
-                output.push_back(NOP);
+                output.push_back(AsmToken(OpCode::MOVCB).setLabel(asmToken.label));
+                output.push_back(AsmToken(OpCode::NOP).setLabel(next.label));
             } else if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPIDX) {
-                output.push_back(MOVCIDX);
-                output.push_back(NOP);
+                output.push_back(AsmToken(OpCode::MOVCIDX).setLabel(asmToken.label));
+                output.push_back(AsmToken(OpCode::NOP).setLabel(next.label));
             } else {
                 output.push_back(asmToken);
                 output.push_back(next);
