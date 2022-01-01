@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     opt.add(
         "16", // Default.
         0, // Required?
-        0, // Number of args expected.
+        1, // Number of args expected.
         0, // Delimiter if expecting multiple args.
         "CPU type (16,32)", // Help description.
         "-c"     // Flag token.
