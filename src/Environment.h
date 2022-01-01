@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <variant>
+#include <iostream>
 
 enum class SimpleType {
     NONE,
@@ -112,7 +113,7 @@ class Environment {
         }
 
         std::shared_ptr<Environment> beginScope(std::shared_ptr<Environment> parent) {
-            return std::shared_ptr<Environment>(new Environment(parent, parent->Offset()+parent->size(), parent->functionName));
+            return std::shared_ptr<Environment>(new Environment(parent, parent->Offset()+parent->size()+parent->localBlocks, parent->functionName));
         }
 
         std::shared_ptr<Environment> endScope() {
@@ -271,6 +272,9 @@ class Environment {
             for (size_t i = 0; i  < count; i++) {
                 vars.insert(std::make_pair(name + std::string(i, ' '), std::make_pair(next+i, type)));
             }
+
+            //std::cerr << name << "@" << next << std::endl;
+
             return next;
         }
 
