@@ -12,18 +12,6 @@
 
 #include "System.h"
 
-enum class ArgType {
-    NONE,
-    INT,
-    FLOAT,
-    POINTER,
-    STRING,
-    VALUE,
-    SYSCALL,
-    LABEL,
-    COUNT
-};
-
 struct AsmToken {
     OpCode opcode;
     std::optional<std::variant<int16_t, float, int32_t, uint32_t, uint64_t, std::string, std::pair<SysCall, RuntimeValue>>> arg;

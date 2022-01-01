@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
         std::ofstream ofs(filename, std::ios::binary);
         ofs.write(ExeHeader.c_str(), 4);
 
-        Binary binary;
+        Binary binary(cpu);
         auto code = binary.translate(asmTokens);
 
         ofs.write(reinterpret_cast<char *>(code.data()), code.size());

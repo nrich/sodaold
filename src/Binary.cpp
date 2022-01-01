@@ -148,6 +148,13 @@ uint32_t Binary::addSyscall(OpCode opcode, SysCall syscall, RuntimeValue rtarg) 
     return pos;
 }
 
+void Binary::updateShort(uint32_t pos, int16_t s) {
+    uint8_t *bytes = (uint8_t *)&s;
+
+    code[pos+0] = bytes[0];
+    code[pos+1] = bytes[1];
+}
+
 std::vector<uint8_t> Binary::translate(const std::vector<AsmToken> &tokens) {
     std::map<std::string, uint32_t> labels;
     std::map<uint32_t, std::string> jumps;
@@ -155,14 +162,20 @@ std::vector<uint8_t> Binary::translate(const std::vector<AsmToken> &tokens) {
     for (auto token : tokens) {
         uint32_t pos = 0;
 
+        auto argtype = OpCodeDefinition[OpCodeAsString(token.opcode)].second;
+
         if (token.isNone()) {
-            pos = add(token.opcode);
+            if (argtype == ArgType::LABEL) {
+                pos = addShort(token.opcode, 0);
+            } else {
+                pos = add(token.opcode);
+            }
         } else if (token.isShort()) {
             pos = addShort(token.opcode, std::get<int16_t>(*token.arg));
         } else if (token.isFloat()) {
             pos = addFloat(token.opcode, std::get<float>(*token.arg));
         } else if (token.isPointer()) {
-            pos = addPointer(token.opcode, std::get<int32_t>(*token.arg));
+            pos = addPointer(token.opcode, (uint32_t)std::get<int32_t>(*token.arg));
         } else if (token.isValue()) {
             if (cpu == 32) {
                 pos = addValue64(token.opcode, std::get<uint64_t>(*token.arg));
@@ -177,8 +190,26 @@ std::vector<uint8_t> Binary::translate(const std::vector<AsmToken> &tokens) {
         }
 
         if (token.label.size()) {
-            labels[token.label] = pos;
+            if (argtype == ArgType::LABEL) {
+                jumps[pos] = token.label;
+            } else {
+                labels[token.label] = pos;
+            }
         }
+    }
+
+    for (auto jump : jumps) {
+        const uint32_t pos = jump.first;
+        const std::string label = jump.second;
+
+        auto dst = labels.find(label);
+
+        if (dst == labels.end()) {
+            std::cerr << "Unknown label " << label << std::endl;
+            exit(-1);
+        }
+
+        updateShort(pos+1, dst->second);
     }
 
     return code;

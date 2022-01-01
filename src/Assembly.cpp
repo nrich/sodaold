@@ -6,137 +6,6 @@
 #include <iomanip>
 #include <memory>
 
-std::map<std::string, std::pair<OpCode, ArgType>> def = {
-    {"NOP", {OpCode::NOP, ArgType::NONE}},
-
-    {"HALT", {OpCode::HALT, ArgType::NONE}},
-
-    {"SETA", {OpCode::SETA, ArgType::VALUE}},
-    {"SETB", {OpCode::SETB, ArgType::VALUE}},
-    {"SETC", {OpCode::SETC, ArgType::VALUE}},
-
-    {"LOADA", {OpCode::LOADA, ArgType::POINTER}},
-    {"LOADB", {OpCode::LOADB, ArgType::POINTER}},
-    {"LOADC", {OpCode::LOADC, ArgType::POINTER}},
-
-    {"STOREA", {OpCode::STOREA, ArgType::POINTER}},
-    {"STOREB", {OpCode::STOREB, ArgType::POINTER}},
-    {"STOREC", {OpCode::STOREC, ArgType::POINTER}},
-
-    {"READA", {OpCode::READA, ArgType::VALUE}},
-    {"READB", {OpCode::READB, ArgType::VALUE}},
-    {"READC", {OpCode::READC, ArgType::VALUE}},
-
-    {"WRITEA", {OpCode::WRITEA, ArgType::VALUE}},
-    {"WRITEB", {OpCode::WRITEB, ArgType::VALUE}},
-    {"WRITEC", {OpCode::WRITEC, ArgType::VALUE}},
-
-    {"PUSHA", {OpCode::PUSHA, ArgType::NONE}},
-    {"PUSHB", {OpCode::PUSHB, ArgType::NONE}},
-    {"PUSHC", {OpCode::PUSHC, ArgType::NONE}},
-
-    {"POPA", {OpCode::POPA, ArgType::NONE}},
-    {"POPB", {OpCode::POPB, ArgType::NONE}},
-    {"POPC", {OpCode::POPC, ArgType::NONE}},
-
-    {"MOVCA", {OpCode::MOVCA, ArgType::NONE}},
-    {"MOVCB", {OpCode::MOVCB, ArgType::NONE}},
-    {"MOVCIDX", {OpCode::MOVCIDX, ArgType::NONE}},
-
-    {"INCA", {OpCode::INCA, ArgType::VALUE}},
-    {"INCB", {OpCode::INCB, ArgType::VALUE}},
-    {"INCC", {OpCode::INCC, ArgType::VALUE}},
-
-    {"IDXA", {OpCode::IDXA, ArgType::NONE}},
-    {"IDXB", {OpCode::IDXB, ArgType::NONE}},
-    {"IDXC", {OpCode::IDXC, ArgType::NONE}},
-
-    {"WRITEAX", {OpCode::WRITEAX, ArgType::NONE}},
-    {"WRITEBX", {OpCode::WRITEBX, ArgType::NONE}},
-    {"WRITECX", {OpCode::WRITECX, ArgType::NONE}},
-
-    {"ADD", {OpCode::ADD, ArgType::NONE}},
-    {"SUB", {OpCode::SUB, ArgType::NONE}},
-    {"MUL", {OpCode::MUL, ArgType::NONE}},
-    {"DIV", {OpCode::DIV, ArgType::NONE}},
-    {"IDIV", {OpCode::IDIV, ArgType::NONE}},
-    {"MOD", {OpCode::MOD, ArgType::NONE}},
-    {"POW", {OpCode::POW, ArgType::NONE}},
-    {"EXP", {OpCode::EXP, ArgType::NONE}},
-
-    {"LSHIFT", {OpCode::LSHIFT, ArgType::NONE}},
-    {"RSHIFT", {OpCode::RSHIFT, ArgType::NONE}},
-    {"BNOT", {OpCode::BNOT, ArgType::NONE}},
-    {"BAND", {OpCode::BAND, ArgType::NONE}},
-    {"BOR", {OpCode::BOR, ArgType::NONE}},
-    {"XOR", {OpCode::XOR, ArgType::NONE}},
-
-    {"ATAN", {OpCode::ATAN, ArgType::NONE}},
-    {"COS", {OpCode::COS, ArgType::NONE}},
-    {"LOG", {OpCode::LOG, ArgType::NONE}},
-    {"SIN", {OpCode::SIN, ArgType::NONE}},
-    {"SQR", {OpCode::SQR, ArgType::NONE}},
-    {"TAN", {OpCode::TAN, ArgType::NONE}},
-
-    {"RND", {OpCode::RND, ArgType::NONE}},
-    {"SEED", {OpCode::SEED, ArgType::NONE}},
-
-    {"FLT", {OpCode::FLT, ArgType::NONE}},
-    {"INT", {OpCode::INT, ArgType::NONE}},
-    {"PTR", {OpCode::PTR, ArgType::NONE}},
-    {"STR", {OpCode::STR, ArgType::NONE}},
-    {"VSTR", {OpCode::VSTR, ArgType::NONE}},
-
-    {"AND", {OpCode::AND, ArgType::NONE}},
-    {"OR", {OpCode::OR, ArgType::NONE}},
-    {"NOT", {OpCode::NOT, ArgType::NONE}},
-
-    {"EQ", {OpCode::EQ, ArgType::NONE}},
-    {"NE", {OpCode::NE, ArgType::NONE}},
-    {"GT", {OpCode::GT, ArgType::NONE}},
-    {"GE", {OpCode::GE, ArgType::NONE}},
-    {"LT", {OpCode::LT, ArgType::NONE}},
-    {"LE", {OpCode::LE, ArgType::NONE}},
-    {"CMP", {OpCode::CMP, ArgType::NONE}},
-
-    {"SETIDX", {OpCode::SETIDX, ArgType::POINTER}},
-    {"MOVIDX", {OpCode::MOVIDX, ArgType::VALUE}},
-    {"LOADIDX", {OpCode::LOADIDX, ArgType::POINTER}},
-    {"STOREIDX", {OpCode::STOREIDX, ArgType::VALUE}},
-    {"INCIDX", {OpCode::INCIDX, ArgType::VALUE}},
-    {"SAVEIDX", {OpCode::SAVEIDX, ArgType::POINTER}},
-    {"PUSHIDX", {OpCode::PUSHIDX, ArgType::NONE}},
-    {"POPIDX", {OpCode::POPIDX, ArgType::NONE}},
-
-    {"JMP", {OpCode::JMP, ArgType::LABEL}},
-    {"JMPEZ", {OpCode::JMPEZ, ArgType::LABEL}},
-    {"JMPNZ", {OpCode::JMPNZ, ArgType::LABEL}},
-
-    {"IDATA", {OpCode::IDATA, ArgType::INT}},
-    {"FDATA", {OpCode::FDATA, ArgType::FLOAT}},
-    {"PDATA", {OpCode::PDATA, ArgType::POINTER}},
-    {"SDATA", {OpCode::SDATA, ArgType::STRING}},
-
-    {"SYSCALL", {OpCode::SYSCALL, ArgType::SYSCALL}},
-
-    {"CALL", {OpCode::CALL, ArgType::LABEL}},
-    {"RETURN", {OpCode::RETURN, ArgType::NONE}},
-
-    {"IRQ", {OpCode::IRQ, ArgType::INT}},
-
-    {"ALLOC", {OpCode::ALLOC, ArgType::INT}},
-    {"CALLOC", {OpCode::CALLOC, ArgType::NONE}},
-
-    {"FREE", {OpCode::FREE, ArgType::POINTER}},
-    {"FREEIDX", {OpCode::FREEIDX, ArgType::NONE}},
-
-    {"COPY", {OpCode::COPY, ArgType::NONE}},
-
-    {"YIELD", {OpCode::YIELD, ArgType::NONE}},
-
-    {"TRACE", {OpCode::TRACE, ArgType::INT}}
-};
-
 static std::pair<std::string, std::string> getSysCall(SysCall syscall, RuntimeValue rt) {
     std::string syscallname;
     std::string rtname;
@@ -221,7 +90,7 @@ std::string AsmToken::toString() const {
     std::ostringstream s;
 
     if (label.size()) {
-        if (def[OpCodeAsString(opcode)].second == ArgType::LABEL) {
+        if (OpCodeDefinition[OpCodeAsString(opcode)].second == ArgType::LABEL) {
             s << OpCodeAsString(opcode) << " " << label;
         } else {
             s << label << ":" << std::endl;

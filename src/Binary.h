@@ -26,6 +26,7 @@ class Binary {
     uint32_t addValue64(OpCode opcode, uint64_t v);
     uint32_t addSyscall(OpCode opcode, SysCall syscall, RuntimeValue rtarg);
 
+    void updateShort(uint32_t pos, int16_t s);
 public:
     Binary(int cpu) : cpu(cpu) {
     }

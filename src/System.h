@@ -2,6 +2,7 @@
 #define __SYSTEM_H__
 
 #include <string>
+#include <map>
 #include <cstdint>
 
 enum class OpCode {
@@ -166,6 +167,20 @@ enum class SysCall {
     COUNT
 };
 
+enum class ArgType {
+    NONE,
+    INT,
+    FLOAT,
+    POINTER,
+    STRING,
+    VALUE,
+    SYSCALL,
+    LABEL,
+    COUNT
+};
+
 std::string OpCodeAsString(OpCode opcode);
+
+extern std::map<std::string, std::pair<OpCode, ArgType>> OpCodeDefinition;
 
 #endif //__SYSTEM_H__
