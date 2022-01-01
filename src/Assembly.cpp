@@ -326,7 +326,7 @@ std::vector<AsmToken> optimise(const int cpu, const std::vector<AsmToken> &asmTo
 
     while (current < asmTokens.size()) {
         auto asmToken = asmTokens[current++];
-        if (asmToken.iSNone()) {
+        if (asmToken.isNone()) {
             auto next = asmTokens[current++];
 
             if (asmToken.opcode == OpCode::PUSHC && next.opcode == OpCode::POPC) {

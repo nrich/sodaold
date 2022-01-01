@@ -65,6 +65,7 @@ default: all
  
 COMMON_OBJS := \
         src/Assembly.o \
+        src/Binary.o \
         src/Compiler.o \
         src/Environment.o \
         src/Parser.o \

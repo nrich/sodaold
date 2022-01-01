@@ -9,9 +9,7 @@
 
 #include "Parser.h"
 #include "Compiler.h"
-
-#define EXEHEADER16 "GR16"
-#define EXEHEADER32 "GR32"
+#include "Binary.h"
 
 int main(int argc, char **argv) {
     ez::ezOptionParser opt;
@@ -31,7 +29,7 @@ int main(int argc, char **argv) {
     );
 
     opt.add(
-        "a.obj", // Default.
+        "", // Default.
         0, // Required?
         1, // Number of args expected.
         0, // Delimiter if expecting multiple args.
@@ -40,7 +38,7 @@ int main(int argc, char **argv) {
     );
 
     opt.add(
-        "32", // Default.
+        "16", // Default.
         0, // Required?
         0, // Number of args expected.
         0, // Delimiter if expecting multiple args.
@@ -96,7 +94,45 @@ int main(int argc, char **argv) {
         asmTokens = optimise(cpu, asmTokens);
     }
 
-    for (const auto token : asmTokens) {
-        std::cout << token.toString() << std::endl;
+    if (opt.isSet("-s")) {
+        std::string filename;
+
+        if (opt.isSet("-o")) {
+            opt.get("-o")->getString(filename);
+        } else {
+            filename = "a.asm";
+        }
+
+        std::ofstream ofs(filename);
+        
+        for (const auto token : asmTokens) {
+            ofs << token.toString() << std::endl;
+        }
+
+        ofs.close();
+    } else {
+        std::string filename;
+
+        if (opt.isSet("-o")) {
+            opt.get("-o")->getString(filename);
+        } else {
+            filename = "a.obj";
+        }
+
+        std::string ExeHeader;
+        if (cpu == 16) {
+            ExeHeader = "GR16";
+        } else if (cpu == 32) {
+            ExeHeader = "GR32";
+        }
+
+        std::ofstream ofs(filename, std::ios::binary);
+        ofs.write(ExeHeader.c_str(), 4);
+
+        Binary binary;
+        auto code = binary.translate(asmTokens);
+
+        ofs.write(reinterpret_cast<char *>(code.data()), code.size());
+        ofs.close();
     }
 }
