@@ -1446,11 +1446,55 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     } else if (tokens[current].type == TokenType::SIZEOF) {
         current++;
         auto name = tokens[current].str;
-        auto _struct = env->getStruct(name);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
+
+        if (env->isStruct(name)) {
+            auto _struct = env->getStruct(name);
+            if (cpu == 16) {
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
+            } else {
+                addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
+            }
+        } else if (env->isFunction(name)) {
+            error(tokens[current], "Cannot pass function to sizeof");
         } else {
-            addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
+            auto type = env->getType(name);
+
+            if (std::holds_alternative<Struct>(type)) {
+                auto _struct = std::get<Struct>(type);
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
+                }
+            } else if (std::holds_alternative<Array>(type)) {
+                auto _array = std::get<Array>(type);
+
+                int len = _array.length ? _array.length : 1;
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(len));
+                }
+            } else if (std::holds_alternative<String>(type)) {
+                auto _string = std::get<String>(type);
+
+                int len = _string.literal.size() ? _string.literal.size() : 1;
+
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(len));
+                }
+
+            } else {
+                if (cpu == 16) {
+                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
+                } else {
+                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(1));
+                }
+            }
         }
         add(asmTokens, OpCode::PUSHC);
         return Scalar;

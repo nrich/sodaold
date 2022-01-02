@@ -34,7 +34,6 @@ size_t Array::size() const {
     }
 }
 
-
 ValueType Array::getStoredType() const {
     if (std::holds_alternative<Array>(*type)) {
         auto array = std::get<Array>(*type);
