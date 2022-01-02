@@ -208,7 +208,7 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'm':
-                    if (keyword == "make") {
+                    if (keyword == "malloc") {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
@@ -288,10 +288,6 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     else
                     if (keyword == "strcpy") {
-                        tokenType = TokenType::BUILTIN;
-                    }
-                    else
-                    if (keyword == "string") {
                         tokenType = TokenType::BUILTIN;
                     }
                     else

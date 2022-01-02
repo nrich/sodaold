@@ -383,12 +383,12 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::LOG);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
-    } else if (token.str == "make") {
+    } else if (token.str == "malloc") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
         if (type == None)
-            error(token, "Function `make': Cannot assign a void value to parameter 1");
+            error(token, "Function `malloc': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::CALLOC);
         add(asmTokens, OpCode::PUSHIDX);
@@ -924,16 +924,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         }
 
         return String();
-    } else if (token.str == "string") {
-        auto type = expression(cpu, asmTokens, tokens, 0);
-        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
-
-        if (type == None)
-            error(token, "Function `make': Cannot assign a void value to parameter 1");
-
-        add(asmTokens, OpCode::CALLOC);
-        add(asmTokens, OpCode::PUSHIDX);
-        return String();
     } else if (token.str == "strlen") {
         auto type = expression(cpu, asmTokens, tokens, 0);
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
@@ -1458,9 +1448,9 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
         auto name = tokens[current].str;
         auto _struct = env->getStruct(name);
         if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETA, Int16AsValue(_struct.size()));
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
         } else {
-            addValue32(asmTokens, OpCode::SETA, Int32AsValue(_struct.size()));
+            addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
         }
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
