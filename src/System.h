@@ -164,6 +164,7 @@ enum class SysCall {
     SOUND,
     VOICE,
     MOUSE,
+    CLOCK,
     COUNT
 };
 

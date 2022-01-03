@@ -155,6 +155,11 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::ATAN);
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
+    } else if (token.str == "clock") {
+        check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
+        addSyscall(asmTokens, OpCode::SYSCALL, SysCall::CLOCK, RuntimeValue::C);
+        add(asmTokens, OpCode::PUSHC);
+        return Scalar;
     } else if (token.str == "cls") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::CLS, RuntimeValue::NONE);

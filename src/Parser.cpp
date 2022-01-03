@@ -121,6 +121,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'c':
+                    if (keyword == "clock") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "cls") {
                         tokenType = TokenType::BUILTIN;
                     }
