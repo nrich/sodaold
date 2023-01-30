@@ -38,15 +38,6 @@ int main(int argc, char **argv) {
     );
 
     opt.add(
-        "16", // Default.
-        0, // Required?
-        1, // Number of args expected.
-        0, // Delimiter if expecting multiple args.
-        "CPU type (16,32)", // Help description.
-        "-c"     // Flag token.
-    );
-
-    opt.add(
         "", // Default.
         0, // Required?
         0, // Number of args expected.
@@ -73,8 +64,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    int cpu;
-    opt.get("-c")->getInt(cpu);
+    int cpu = 16;
 
     std::string filename = *opt.lastArgs[0];
     std::ifstream infile(filename);
@@ -102,13 +92,13 @@ int main(int argc, char **argv) {
 
             std::ofstream ofs(filename);
         
-            for (const auto token : asmTokens) {
+            for (const auto &token : asmTokens) {
                 ofs << token.toString() << std::endl;
             }
 
             ofs.close();
         } else {
-            for (const auto token : asmTokens) {
+            for (const auto &token : asmTokens) {
                 std::cout << token.toString() << std::endl;
             }
         }
@@ -121,12 +111,7 @@ int main(int argc, char **argv) {
             filename = "a.obj";
         }
 
-        std::string ExeHeader;
-        if (cpu == 16) {
-            ExeHeader = "GR16";
-        } else if (cpu == 32) {
-            ExeHeader = "GR32";
-        }
+        std::string ExeHeader = "GR16";
 
         std::ofstream ofs(filename, std::ios::binary);
         ofs.write(ExeHeader.c_str(), 4);
