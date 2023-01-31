@@ -93,12 +93,6 @@ static void addValue16(std::vector<AsmToken> &asmTokens, OpCode opcode, const ui
     asmTokens.push_back(token);
 }
 
-static void addValue32(std::vector<AsmToken> &asmTokens, OpCode opcode, const uint64_t &v, const std::string label="") {
-    auto token = AsmToken(opcode, v);
-    token.label = label;
-    asmTokens.push_back(token);
-}
-
 static void addSyscall(std::vector<AsmToken> &asmTokens, OpCode opcode, SysCall syscall, RuntimeValue r, const std::string label="") {
     auto token = AsmToken(opcode, std::make_pair(syscall, r));
     token.label = label;
@@ -109,13 +103,6 @@ static uint32_t Int16AsValue(int16_t i) {
     const uint32_t QNAN = 0x7F800000;
 
     return (uint32_t)(QNAN|(uint16_t)i);
-
-}
-
-static uint64_t Int32AsValue(int32_t i) {
-    const uint64_t QNAN = 0X7FFC000000000000;
-
-    return (uint64_t)(QNAN|(uint32_t)i);
 }
 
 static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
@@ -133,11 +120,8 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             error(token, "Function `abs': Cannot assign a void value to parameter 1");
 
         add(asmTokens, OpCode::POPA);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
-        } else {
-            addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
-        }
+
+        addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
         add(asmTokens, OpCode::CMP);
         add(asmTokens, OpCode::MOVCB);
         add(asmTokens, OpCode::MUL);
@@ -182,11 +166,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHIDX);
 
         if (env->inFunction()) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(DrawBoxIndex, Scalar, DrawBoxArgs)));
-            } else {
-                addValue32(asmTokens, OpCode::MOVIDX, Int32AsValue(env->create(DrawBoxIndex, Scalar, DrawBoxArgs)));
-            }
+            addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(DrawBoxIndex, Scalar, DrawBoxArgs)));
         } else {
             addPointer(asmTokens, OpCode::SETIDX, env->create(DrawBoxIndex, Scalar, DrawBoxArgs));
         }
@@ -204,11 +184,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-            }
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
             if (i != (DrawBoxArgs-1))
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
@@ -228,11 +204,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHIDX);
 
         if (env->inFunction()) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(DrawLineIndex, Scalar, DrawLineArgs)));
-            } else {
-                addValue32(asmTokens, OpCode::MOVIDX, Int32AsValue(env->create(DrawLineIndex, Scalar, DrawLineArgs)));
-            }
+            addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(DrawLineIndex, Scalar, DrawLineArgs)));
         } else {
             addPointer(asmTokens, OpCode::SETIDX, env->create(DrawLineIndex, Scalar, DrawLineArgs));
         }
@@ -250,11 +222,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-            }
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
             if (i != (DrawLineArgs-1))
                 check(tokens[current++], TokenType::COMMA, "`,' expected");
@@ -459,18 +427,11 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHIDX);
 
         add(asmTokens, OpCode::WRITEAX);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-        }
+
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
         add(asmTokens, OpCode::WRITEBX);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
         add(asmTokens, OpCode::WRITECX);
 
@@ -512,11 +473,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     } else if (token.str == "rand") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::SETC, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
 
         add(asmTokens, OpCode::RND);
         add(asmTokens, OpCode::PUSHC);
@@ -634,11 +591,8 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
 
             if (_string.literal.size()) {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
-                }
+
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 add(asmTokens, OpCode::PUSHC);
                 add(asmTokens, OpCode::PUSHIDX);
             } else {
@@ -646,20 +600,12 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
                 add(asmTokens, OpCode::PUSHIDX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
-                } else {
-                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
-                }
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
 
                 add(asmTokens, OpCode::IDXA, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
                 add(asmTokens, OpCode::CMP);
                 add(asmTokens, OpCode::JMPEZ, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
                 add(asmTokens, OpCode::JMP, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
 
                 add(asmTokens, OpCode::PUSHIDX, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
@@ -686,11 +632,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
 
             if (_string.literal.size()) {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 add(asmTokens, OpCode::PUSHC);
                 add(asmTokens, OpCode::PUSHIDX);
             } else {
@@ -698,20 +640,12 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
                 add(asmTokens, OpCode::PUSHIDX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
-                } else {
-                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
-                }
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
 
                 add(asmTokens, OpCode::IDXA, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
                 add(asmTokens, OpCode::CMP);
                 add(asmTokens, OpCode::JMPEZ, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
                 add(asmTokens, OpCode::JMP, "STRCAT_" + std::to_string(_strcat) + "_CHECK");
 
                 add(asmTokens, OpCode::PUSHIDX, "STRCAT_" + std::to_string(_strcat) + "_FALSE");
@@ -737,11 +671,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHC);
 
         add(asmTokens, OpCode::ADD);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
 
         add(asmTokens, OpCode::CALLOC);
 
@@ -845,15 +775,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::IDXC);
         add(asmTokens, OpCode::JMPEZ, "STRCMP_" + std::to_string(_strcmp) + "_DONE");
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-            addValue16(asmTokens, OpCode::INCA, Int16AsValue(1));
-            addValue16(asmTokens, OpCode::INCB, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-            addValue32(asmTokens, OpCode::INCA, Int32AsValue(1));
-            addValue32(asmTokens, OpCode::INCB, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
+        addValue16(asmTokens, OpCode::INCA, Int16AsValue(1));
+        addValue16(asmTokens, OpCode::INCB, Int16AsValue(1));
 
         add(asmTokens, OpCode::JMP, "STRCMP_" + std::to_string(_strcmp) + "_CMP");
 
@@ -872,11 +796,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
 
             if (_string.literal.size()) {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 add(asmTokens, OpCode::PUSHC);
             } else {
                 static int STRCPYs = 1;
@@ -884,20 +804,12 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
                 add(asmTokens, OpCode::PUSHIDX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
-                } else {
-                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
-                }
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
 
                 add(asmTokens, OpCode::IDXA, "STRCPY_" + std::to_string(_strcpy) + "_CHECK");
                 add(asmTokens, OpCode::CMP);
                 add(asmTokens, OpCode::JMPEZ, "STRCPY_" + std::to_string(_strcpy) + "_FALSE");
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
                 add(asmTokens, OpCode::JMP, "STRCPY_" + std::to_string(_strcpy) + "_CHECK");
 
                 add(asmTokens, OpCode::PUSHIDX, "STRCPY_" + std::to_string(_strcpy) + "_FALSE");
@@ -908,11 +820,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
                 add(asmTokens, OpCode::PUSHC);
             }
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-            } else {
-                addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-            }
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
 
             add(asmTokens, OpCode::PUSHIDX);
             add(asmTokens, OpCode::POPB);
@@ -942,11 +850,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
 
             if (_string.literal.size()) {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_string.literal.size()));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 add(asmTokens, OpCode::PUSHC);
             } else {
                 static int STRLENs = 1;
@@ -954,20 +858,12 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
                 add(asmTokens, OpCode::PUSHIDX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
-                } else {
-                    addValue32(asmTokens, OpCode::SETB, Int32AsValue(0));
-                }
+                addValue16(asmTokens, OpCode::SETB, Int16AsValue(0));
 
                 add(asmTokens, OpCode::IDXA, "STRLEN_" + std::to_string(_strlen) + "_CHECK");
                 add(asmTokens, OpCode::CMP);
                 add(asmTokens, OpCode::JMPEZ, "STRLEN_" + std::to_string(_strlen) + "_FALSE");
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
                 add(asmTokens, OpCode::JMP, "STRLEN_" + std::to_string(_strlen) + "_CHECK");
 
                 add(asmTokens, OpCode::PUSHIDX, "STRLEN_" + std::to_string(_strlen) + "_FALSE");
@@ -1008,11 +904,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::PUSHC);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
 
         add(asmTokens, OpCode::CALLOC);
         add(asmTokens, OpCode::POPC);
@@ -1053,11 +945,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::PUSHIDX);
 
         if (env->inFunction()) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(VoiceIndex, Scalar, VoiceArgs)));
-            } else {
-                addValue32(asmTokens, OpCode::MOVIDX, Int32AsValue(env->create(VoiceIndex, Scalar, VoiceArgs)));
-            }
+            addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(env->create(VoiceIndex, Scalar, VoiceArgs)));
         } else {
             addPointer(asmTokens, OpCode::SETIDX, env->create(VoiceIndex, Scalar, VoiceArgs));
         }
@@ -1071,11 +959,7 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
             add(asmTokens, OpCode::WRITECX);
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-            }
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
             check(tokens[current++], TokenType::COMMA, "`,' expected");
         }
@@ -1117,19 +1001,11 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
 
         return String(token.str);
     } else if (token.type == TokenType::CHARACTER) {
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)token.str[0]));
-        } else {
-            addValue32(asmTokens, OpCode::SETC, Int32AsValue((int32_t)token.str[0]));
-        }
+        addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)token.str[0]));
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
     } else if (token.type == TokenType::INTEGER) {
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
-        } else {
-            addValue32(asmTokens, OpCode::SETC, Int32AsValue((int32_t)std::stoi(token.str)));
-        }
+        addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
         add(asmTokens, OpCode::PUSHC);
         return Scalar;
     } else if (token.type == TokenType::REAL) {
@@ -1251,11 +1127,7 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 add(asmTokens, OpCode::POPIDX);
                 add(asmTokens, OpCode::WRITECX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
                 argcount++;
             }
@@ -1290,11 +1162,7 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 add(asmTokens, OpCode::POPIDX);
                 add(asmTokens, OpCode::WRITECX);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
 
                 argcount++;
             }
@@ -1316,19 +1184,11 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
 
             if (tokens[current+1].type == TokenType::DECREMENT) {
                 current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-                }
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
                 addPointer(asmTokens, OpCode::STOREC, env->get(token.str));
             } else if (tokens[current+1].type == TokenType::INCREMENT) {
                 current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
                 addPointer(asmTokens, OpCode::STOREC, env->get(token.str));
             }
 
@@ -1339,32 +1199,18 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
             if (type == Undefined)
                 error(tokens[current], "Variable `" + token.str + "' used before initialisation");
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(token.str)));
-            } else {
-                addValue32(asmTokens, OpCode::READC, Int32AsValue(env->get(token.str)));
-            }
+            addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(token.str)));
 
             add(asmTokens, OpCode::PUSHC);
 
             if (tokens[current+1].type == TokenType::DECREMENT) {
                 current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-                    addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-                    addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(token.str)));
-                }
-            } else if (tokens[current+1].type == TokenType::INCREMENT) {
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
+                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
+           } else if (tokens[current+1].type == TokenType::INCREMENT) {
                 current++;
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-                    addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-                    addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(token.str)));
-                }
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
+                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(token.str)));
             }
 
             return type;
@@ -1454,11 +1300,7 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
 
         if (env->isStruct(name)) {
             auto _struct = env->getStruct(name);
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
-            } else {
-                addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
-            }
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
         } else if (env->isFunction(name)) {
             error(tokens[current], "Cannot pass function to sizeof");
         } else {
@@ -1467,38 +1309,21 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
             if (std::holds_alternative<Struct>(type)) {
                 auto _struct = std::get<Struct>(type);
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(_struct.size()));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(_struct.size()));
             } else if (std::holds_alternative<Array>(type)) {
                 auto _array = std::get<Array>(type);
 
                 int len = _array.length ? _array.length : 1;
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(len));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
             } else if (std::holds_alternative<String>(type)) {
                 auto _string = std::get<String>(type);
 
                 int len = _string.literal.size() ? _string.literal.size() : 1;
 
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(len));
-                }
-
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(len));
             } else {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::SETC, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(1));
             }
         }
         add(asmTokens, OpCode::PUSHC);
@@ -1510,11 +1335,7 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
         current++;
         auto type = prefix(cpu, asmTokens, tokens, rbp);
         add(asmTokens, OpCode::POPB);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::SETA, Int16AsValue(0));
-        } else {
-            addValue32(asmTokens, OpCode::SETA, Int32AsValue(0));
-        }
+        addValue16(asmTokens, OpCode::SETA, Int16AsValue(0));
         add(asmTokens, OpCode::SUB);
         add(asmTokens, OpCode::PUSHC);
         return type;
@@ -1532,18 +1353,10 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
 
         add(asmTokens, OpCode::POPC);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
 
         if (env->inFunction()) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(name)));
-            } else {
-                addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(name)));
-            }
+            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(name)));
         } else {
             addPointer(asmTokens, OpCode::STOREC, env->get(name));
         }
@@ -1565,18 +1378,10 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
 
         add(asmTokens, OpCode::POPC);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-        } else {
-            addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-        }
+        addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
 
         if (env->inFunction()) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(name)));
-            } else {
-                addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->get(name)));
-            }
+            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->get(name)));
         } else {
             addPointer(asmTokens, OpCode::STOREC, env->get(name));
         }
@@ -1590,18 +1395,10 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
 
         addShort(asmTokens, OpCode::ALLOC, array.size());
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(array.size()));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(array.size()));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(array.size()));
 
         for (size_t i = 0; i < array.size(); i++) {
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(-1));
-            } else {
-                addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(-1));
-            }
+            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(-1));
 
             add(asmTokens, OpCode::POPC);
             add(asmTokens, OpCode::WRITECX);
@@ -1704,11 +1501,7 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
             auto type = expression(cpu, asmTokens, tokens, 0);
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
-            } else {
-                addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
-            }
+            addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
 
             add(asmTokens, OpCode::POPA);
             add(asmTokens, OpCode::MUL);
@@ -1726,19 +1519,11 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
 
                 if (tokens[current].type == TokenType::DECREMENT) {
                     current++;
-                    if (cpu == 16) {
-                        addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-                    } else {
-                        addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-                    }
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
                     add(asmTokens, OpCode::WRITECX);
                 } else if (tokens[current].type == TokenType::INCREMENT) {
                     current++;
-                    if (cpu == 16) {
-                        addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-                    } else {
-                        addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-                    }
+                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
                     add(asmTokens, OpCode::WRITECX);
                 }
             }
@@ -1777,30 +1562,18 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
 
         add(asmTokens, OpCode::POPIDX);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
 
         add(asmTokens, OpCode::IDXC);
         add(asmTokens, OpCode::PUSHC);
 
         if (tokens[current].type == TokenType::DECREMENT) {
             current++;
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-            } else {
-                addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-            }
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
             add(asmTokens, OpCode::WRITECX);
         } else if (tokens[current].type == TokenType::INCREMENT) {
             current++;
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-            } else {
-                addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-            }
+            addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
             add(asmTokens, OpCode::WRITECX);
         }
 
@@ -1904,7 +1677,7 @@ static void define_const(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 }
 
 static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
-    check(tokens[current++], TokenType::AUTO, "`auto' expected");
+    check(tokens[current++], TokenType::VAR, "`var' expected");
     auto name = identifier(tokens[current++]);
 
     if (tokens[current].type == TokenType::SEMICOLON) {
@@ -1960,11 +1733,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             add(asmTokens, OpCode::PUSHIDX);
             add(asmTokens, OpCode::POPC);
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->create(name, type)));
-            } else {
-                addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->create(name, type)));
-            }
+            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->create(name, type)));
         } else {
             addShort(asmTokens, OpCode::ALLOC, size);
             addPointer(asmTokens, OpCode::SAVEIDX, env->create(name, type));
@@ -1980,11 +1749,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
                 error(tokens[current], "Cannot assign a void value to variable `" + name + "'");
 
             add(asmTokens, OpCode::POPC);
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->create(name, type)));
-            } else {
-                addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->create(name, type)));
-            }
+            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->create(name, type)));
         } else {
             auto type = expression(cpu, asmTokens, tokens);
             check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
@@ -2113,11 +1878,7 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
             auto array = std::get<Array>(containerType);
             auto subType = array.getType();
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
-            } else {
-                addValue32(asmTokens, OpCode::SETB, Int32AsValue(array.offset));
-            }
+            addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
 
             if (expression(cpu, asmTokens, tokens) != Scalar)
                 error(tokens[current], "Integer expected");
@@ -2176,11 +1937,7 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
 
         add(asmTokens, OpCode::POPIDX);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(offset));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(offset));
 
         if (tokens[current].type == TokenType::LEFT_BRACKET || tokens[current].type == TokenType::ACCESSOR) {
             add(asmTokens, OpCode::IDXC);
@@ -2224,21 +1981,13 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
         if (type == None)
             error(tokens[current], "Cannot assign a void value to variable `" + varname + "'");
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::READA, Int16AsValue(env->get(varname)));
-        } else {
-            addValue32(asmTokens, OpCode::READA, Int32AsValue(env->get(varname)));
-        }
+        addValue16(asmTokens, OpCode::READA, Int16AsValue(env->get(varname)));
 
         add(asmTokens, OpCode::POPB);
 
         add(asmTokens, opcode);
 
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->set(varname, type)));
-        } else {
-            addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->set(varname, type)));
-        }
+        addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->set(varname, type)));
     }
 }
 
@@ -2279,11 +2028,7 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
 
             add(asmTokens, OpCode::POPC);
 
-            if (cpu == 16) {
-                addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->set(varname, type)));
-            } else {
-                addValue32(asmTokens, OpCode::WRITEC, Int32AsValue(env->set(varname, type)));
-            }
+            addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->set(varname, type)));
         }
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::PLUS_ASSIGN) {
         assign_op_statement(cpu, asmTokens, tokens, OpCode::ADD);
@@ -2320,11 +2065,7 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
             if (env->isGlobal(varname)) {
                 addPointer(asmTokens, OpCode::LOADC, env->get(varname));
             } else {
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(varname)));
-                } else {
-                    addValue32(asmTokens, OpCode::READC, Int32AsValue(env->get(varname)));
-                }
+                addValue16(asmTokens, OpCode::READC, Int16AsValue(env->get(varname)));
             }
 
             add(asmTokens, OpCode::PUSHC);
@@ -2335,21 +2076,13 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
                 current++;
                 add(asmTokens, OpCode::POPIDX);
                 add(asmTokens, OpCode::IDXC);
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(-1));
-                }
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(-1));
                 add(asmTokens, OpCode::WRITECX);
             } else if (tokens[current].type == TokenType::INCREMENT) {
                 current++;
                 add(asmTokens, OpCode::POPIDX);
                 add(asmTokens, OpCode::IDXC);
-                if (cpu == 16) {
-                    addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
-                } else {
-                    addValue32(asmTokens, OpCode::INCC, Int32AsValue(1));
-                }
+                addValue16(asmTokens, OpCode::INCC, Int16AsValue(1));
                 add(asmTokens, OpCode::WRITECX);
             } else if (tokens[current].type == TokenType::PLUS_ASSIGN) {
                 assign_op_composite_statement(cpu, asmTokens, tokens, OpCode::ADD);
@@ -2401,7 +2134,7 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
 static ValueType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     if (tokens[current].type == TokenType::CONST) {
         define_const(cpu, asmTokens, tokens);
-    } else if (tokens[current].type == TokenType::AUTO) {
+    } else if (tokens[current].type == TokenType::VAR) {
         define_variable(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::IF) {
         if_statment(cpu, asmTokens, tokens);
@@ -2591,20 +2324,12 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     auto rargs = params;
     std::reverse(rargs.begin(), rargs.end());
 
-    if (cpu == 16) {
-        addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(0));
-    } else {
-        addValue32(asmTokens, OpCode::MOVIDX, Int32AsValue(0));
-    }
+    addValue16(asmTokens, OpCode::MOVIDX, Int16AsValue(0));
 
     for (size_t i = 0; i< rargs.size(); i++) {
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::WRITECX);
-        if (cpu == 16) {
-            addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
-        } else {
-            addValue32(asmTokens, OpCode::INCIDX, Int32AsValue(1));
-        }
+        addValue16(asmTokens, OpCode::INCIDX, Int16AsValue(1));
         env->create(rargs[i].first, rargs[i].second);
     }
 

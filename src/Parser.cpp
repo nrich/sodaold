@@ -107,10 +107,6 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
-                    if (keyword == "auto") {
-                        tokenType = TokenType::AUTO;
-                    }
-                    else
                     if (keyword == "atan") {
                         tokenType = TokenType::BUILTIN;
                     }
@@ -313,6 +309,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'v':
+                    if (keyword == "var") {
+                        tokenType = TokenType::VAR;
+                    }
+                    else
                     if (keyword == "voice") {
                         tokenType = TokenType::BUILTIN;
                     }

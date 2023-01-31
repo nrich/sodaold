@@ -129,7 +129,7 @@ enum class TokenType {
     WHILE,
 */
 
-    AUTO,
+    VAR,
     BREAK,
     CONST,
     CONTINUE,
