@@ -591,7 +591,6 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
             add(asmTokens, OpCode::POPIDX);
 
             if (_string.literal.size()) {
-
                 addValue16(asmTokens, OpCode::SETC, Int16AsValue(_string.literal.size()));
                 add(asmTokens, OpCode::PUSHC);
                 add(asmTokens, OpCode::PUSHIDX);
@@ -662,9 +661,9 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
 
         // A = LEN L, B = LEN R, C = L, IDX = R
         add(asmTokens, OpCode::POPIDX);
-        add(asmTokens, OpCode::POPA);
-        add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::POPB);
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::POPA);
 
         // STACK = [L,R]
         add(asmTokens, OpCode::PUSHIDX);
