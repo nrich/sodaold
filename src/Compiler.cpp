@@ -2131,7 +2131,7 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
 
 
 static ValueType declaration(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
-    if (tokens[current].type == TokenType::CONST) {
+    if (tokens[current].type == TokenType::VAL) {
         define_const(cpu, asmTokens, tokens);
     } else if (tokens[current].type == TokenType::VAR) {
         define_variable(cpu, asmTokens, tokens);

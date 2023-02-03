@@ -129,9 +129,7 @@ enum class TokenType {
     WHILE,
 */
 
-    VAR,
     BREAK,
-    CONST,
     CONTINUE,
     DEF,
     ELSE,
@@ -141,6 +139,8 @@ enum class TokenType {
     SIZEOF,
     SLOT,
     STRUCT,
+    VAR,
+    VAL,
     WHILE,
 
     EOL,

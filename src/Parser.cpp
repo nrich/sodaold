@@ -125,10 +125,6 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                     else
-                    if (keyword == "const") {
-                        tokenType = TokenType::CONST;
-                    }
-                    else
                     if (keyword == "continue") {
                         tokenType = TokenType::CONTINUE;
                     }
@@ -309,6 +305,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'v':
+                    if (keyword == "val") {
+                        tokenType = TokenType::VAL;
+                    }
+                    else
                     if (keyword == "var") {
                         tokenType = TokenType::VAR;
                     }
