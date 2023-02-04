@@ -161,7 +161,7 @@ std::vector<Token> parse(const std::string &source) {
                     break;
                 case 'f':
                     if (keyword == "float") {
-                        tokenType = TokenType::BUILTIN;
+                        tokenType = TokenType::FLOAT;
                     }
                     else
                     if (keyword == "for") {
@@ -187,7 +187,7 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     else
                     if (keyword == "int") {
-                        tokenType = TokenType::BUILTIN;
+                        tokenType = TokenType::INT;
                     }
                     break;
                 case 'k':
@@ -273,6 +273,10 @@ std::vector<Token> parse(const std::string &source) {
                     else
                     if (keyword == "sound") {
                         tokenType = TokenType::BUILTIN;
+                    }
+                    else
+                    if (keyword == "str") {
+                        tokenType = TokenType::STR;
                     }
                     else
                     if (keyword == "strcat") {

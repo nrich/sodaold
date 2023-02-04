@@ -129,6 +129,11 @@ enum class TokenType {
     WHILE,
 */
 
+    INT,
+    STR,
+    FLOAT,
+    BYTE,
+
     BREAK,
     CONTINUE,
     DEF,

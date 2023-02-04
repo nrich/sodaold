@@ -11,7 +11,10 @@
 enum class SimpleType {
     NONE,
     UNDEFINED,
-    SCALAR
+    POINTER,
+    FLOAT,
+    INTEGER,
+    BYTE
 };
 
 typedef std::variant<struct Struct, struct Array, struct String, SimpleType> ValueType;
