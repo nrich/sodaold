@@ -1277,28 +1277,52 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     } else if (tokens[current].type == TokenType::LESS) {
         current++;
 
+        ValueType type = Undefined;
+
         if (tokens[current].type == TokenType::INT) {
             current++;
             check(tokens[current++], TokenType::GREATER, "`>' expected");
-
-            return Integer;
+            type = Integer;
         } else if (tokens[current].type == TokenType::FLOAT) {
             current++;
             check(tokens[current++], TokenType::GREATER, "`>' expected");
 
-            return Float;
+            type = Float;
         } else {
             auto name = identifier(tokens[current++]);
             auto _struct = env->getStruct(name);
             check(tokens[current++], TokenType::GREATER, "`>' expected");
 
-            auto type = prefix(cpu, asmTokens, tokens, rbp);
-            return _struct;
+            type = _struct;
         }
-    //} else if (tokens[current].type == TokenType::STAR) {
-    //    current++;
-    //    auto type = prefix(cpu, asmTokens, tokens, rbp);
-    //    return String();
+
+        int16_t size = 1;
+        std::stack<int> dimensions;
+
+        while (tokens[current].type == TokenType::LEFT_BRACKET) {
+            current++;
+
+            check(tokens[current], TokenType::INTEGER, "integer expected");
+
+            auto dim = std::stoi(tokens[current++].str);
+            dimensions.push(dim);
+
+            size *= dim;
+
+            check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
+        }
+
+        int offset = 1;
+        while (dimensions.size()) {
+            auto dim = dimensions.top();
+            type = Array(type, dim, offset);
+            dimensions.pop();
+            offset *= dim;
+        }
+
+        auto _type = prefix(cpu, asmTokens, tokens, rbp);
+
+        return type;
     } else if (tokens[current].type == TokenType::NOT) {
         current++;
         auto type = prefix(cpu, asmTokens, tokens, rbp);
@@ -2144,8 +2168,13 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
                 if (type == None)
                     error(tokens[current], "Cannot assign a void value");
 
-                if (ltype != Undefined && type != ltype)
-                    error(tokens[current], "Type mismatch");
+                if (ltype != Undefined && type != ltype) {
+                    std::ostringstream s;
+
+                    s << "Type mismatch: expected " << ValueTypeToString(ltype) << ", got " << ValueTypeToString(type);
+
+                    error(tokens[current], s.str());
+                }
 
                 add(asmTokens, OpCode::POPC);
                 add(asmTokens, OpCode::POPIDX);

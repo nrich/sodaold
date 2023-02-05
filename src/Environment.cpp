@@ -85,9 +85,7 @@ std::string ValueTypeToString(ValueType type) {
 
         auto type_name = ValueTypeToString(*array.type);
 
-        if (type_name != "Scalar") {
-            s << ":" << type_name;
-        }
+        s << ":" << type_name;
 
         s << "]";
 
@@ -119,6 +117,31 @@ std::string ValueTypeToString(ValueType type) {
 
         return "String[" + std::to_string(_string.literal.size()) + "]";
     } else {
-        return "Scalar";
+        std::ostringstream s;
+
+        auto _simple = std::get<SimpleType>(type);
+
+        switch (_simple) {
+            case SimpleType::NONE:
+                s << "None";
+                break;
+            case SimpleType::UNDEFINED:
+                s << "Undefined";
+                break;
+            case SimpleType::POINTER:
+                s << "Pointer";
+                break;
+            case SimpleType::FLOAT:
+                s << "Float";
+                break;
+            case SimpleType::INTEGER:
+                s << "Integer";
+                break;
+            case SimpleType::BYTE:
+                s << "Byte";
+                break;
+        }
+
+        return s.str();
     }
 }
