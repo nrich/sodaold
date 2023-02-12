@@ -85,9 +85,8 @@ std::string ValueTypeToString(ValueType type) {
 
         auto type_name = ValueTypeToString(*array.type);
 
-        s << ":" << type_name;
-
         s << "]";
+        s << ":" << type_name;
 
         return s.str();
     } else if (std::holds_alternative<Struct>(type)) {
@@ -127,6 +126,9 @@ std::string ValueTypeToString(ValueType type) {
                 break;
             case SimpleType::UNDEFINED:
                 s << "Undefined";
+                break;
+            case SimpleType::ANY:
+                s << "Any";
                 break;
             case SimpleType::POINTER:
                 s << "Pointer";

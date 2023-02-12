@@ -11,6 +11,7 @@
 enum class SimpleType {
     NONE,
     UNDEFINED,
+    ANY,
     POINTER,
     FLOAT,
     INTEGER,
@@ -88,6 +89,7 @@ struct Function {
 class Environment {
     private:
         std::map<const std::string, std::pair<uint32_t, ValueType>> vars;
+        std::map<const std::string, uint32_t> vals;
         std::map<const std::string, Function> functions;
         std::map<const std::string, Struct> structs;
         std::shared_ptr<Environment> parent;
@@ -234,6 +236,20 @@ class Environment {
             return false;
         }
 
+        bool isConstant(const std::string &name) const {
+            auto found = vals.find(name);
+
+            if (found != vals.end()) {
+                return true;
+            }
+
+            if (parent) {
+                return parent->isConstant(name);
+            }
+
+            return false;
+        }
+
         bool isVariable(const std::string &name) const {
             auto found = vars.find(name);
 
@@ -281,6 +297,19 @@ class Environment {
             return next;
         }
 
+        int32_t createConstant(const std::string &name, ValueType type, size_t count=1) {
+            auto existing = vars.find(name);
+            if (existing != vars.end()) {
+                throw std::invalid_argument("Cannot create constant from existing name `" + name + "'");
+            }
+
+            int32_t next = create(name, type, count);
+
+            vals[name] = next;
+
+            return next;
+        }
+
         int32_t defineString(const std::string &value) {
             if (parent) {
                 return parent->defineString(value);
@@ -291,7 +320,7 @@ class Environment {
                 stringTableOffset += value.size() + 1;
                 return next;
             }
-       }
+        }
 
         uint32_t set(const std::string &name, ValueType type) {
             auto found = vars.find(name);

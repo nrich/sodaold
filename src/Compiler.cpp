@@ -16,6 +16,7 @@ static ValueType expression(int cpu, std::vector<AsmToken> &asmTokens, const std
 
 static const ValueType None(SimpleType::NONE);
 static const ValueType Undefined(SimpleType::UNDEFINED);
+static const ValueType Any(SimpleType::ANY);
 static const ValueType Pointer(SimpleType::POINTER);
 static const ValueType Integer(SimpleType::INTEGER);
 static const ValueType Float(SimpleType::FLOAT);
@@ -46,6 +47,14 @@ static void error(const Token &token, const std::string &err) {
     s << "Error at line " << token.line << " position " << token.position << ": " << err;
     throw std::domain_error(s.str());
 }
+
+static void warning(const Token &token, const std::string &warn) {
+    std::ostringstream s;
+    s << "Warning at " << token.line << " position " << token.position << ": " << warn;
+    //throw std::domain_error(s.str());
+    std::cerr << s.str() << std::endl;
+}
+
 
 static std::string identifier(const Token &token) {
     if (token.type != TokenType::IDENTIFIER) {
@@ -1026,6 +1035,8 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
             auto name = token.str;
             auto function = env->getFunction(name);
             auto params = function.params.size();
+            std::vector<std::pair<std::string, ValueType>> param_types;
+            std::copy(function.params.begin(), function.params.end(), std::back_inserter(param_types));
             current++;
 
             size_t argcount = 0;
@@ -1040,19 +1051,14 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (type == None)
                     error(tokens[current], "Function `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
-                auto param = function.params[argcount];
+                auto param = param_types[argcount];
                 auto paramType = param.second;
 
-                if (paramType != Float && paramType != Integer && paramType != type) {
-                    if (std::holds_alternative<Array>(paramType)) {
-                        error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
-                    } else if (std::holds_alternative<String>(paramType)) {
-                        error(tokens[current], "Function `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
-                    } else if (std::holds_alternative<Struct>(paramType)) {
-                        auto expected = std::get<Struct>(paramType);
-                        error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
-                    }
+                if (paramType != type && paramType != Any) {
+                     error(tokens[current], "Function `" + name + "': Expected " + ValueTypeToString(paramType) + " for parameter " + std::to_string(argcount+1) + ", got " + ValueTypeToString(type));
                 }
+
+                param_types[argcount].second = type;
 
                 argcount++;
             }
@@ -1068,19 +1074,14 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
                 if (type == None)
                     error(tokens[current], "Function `" + name + "': Cannot assign a void value to parameter " + std::to_string(argcount+1));
 
-                auto param = function.params[argcount];
+                auto param = param_types[argcount];
                 auto paramType = param.second;
 
-                if (paramType != Float && paramType != Integer && paramType != type) {
-                    if (std::holds_alternative<Array>(paramType)) {
-                        error(tokens[current], "Function `" + name + "': Expected array for parameter " + std::to_string(argcount+1));
-                    } else if (std::holds_alternative<String>(paramType)) {
-                        error(tokens[current], "Function `" + name + "': Expected string for parameter " + std::to_string(argcount+1));
-                    } else if (std::holds_alternative<Struct>(paramType)) {
-                        auto expected = std::get<Struct>(paramType);
-                        error(tokens[current], "Function `" + name + "': Expected struct type " + expected.name + " for parameter " + std::to_string(argcount+1));
-                    }
+                if (paramType != type && paramType != Any) {
+                     error(tokens[current], "Function `" + name + "': Expected " + ValueTypeToString(paramType) + " for parameter " + std::to_string(argcount+1) + ", got " + ValueTypeToString(type));
                 }
+
+                param_types[argcount].second = type;
 
                 argcount++;
             }
@@ -1091,6 +1092,14 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
             }
 
             add(asmTokens, OpCode::CALL, name);
+
+            if (function.returnType == Any) {
+                for (const auto &param : param_types) {
+                    if (param.second != None && param.second != Undefined && param.second != Any) {
+                        return param.second;
+                    }
+                }
+            }
 
             return function.returnType;
         } else if (env->isStruct(token.str)) {
@@ -1716,7 +1725,26 @@ static ValueType expression(int cpu, std::vector<AsmToken> &asmTokens, const std
 }
 
 static void define_const(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
+    check(tokens[current++], TokenType::VAL, "`val' expected");
+    auto name = identifier(tokens[current++]);
 
+    check(tokens[current++], TokenType::ASSIGN, "`=' expected");
+
+    auto type = expression(cpu, asmTokens, tokens);
+    check(tokens[current++], TokenType::SEMICOLON, "`;' expected");
+
+    if (type == None)
+        error(tokens[current], "Cannot assign a void value to constant value `" + name + "'");
+
+    if (type != Integer && type != Float && !std::holds_alternative<String>(type))
+        error(tokens[current], "Cannot assign a " + ValueTypeToString(type) + " value to constant value `" + name + "'");
+
+    add(asmTokens, OpCode::POPC);
+    if (env->inFunction()) {
+        addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->createConstant(name, type)));
+    } else {
+        addPointer(asmTokens, OpCode::STOREC, env->createConstant(name, type));
+    }
 }
 
 static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
@@ -1750,7 +1778,7 @@ static void define_variable(int cpu, std::vector<AsmToken> &asmTokens, const std
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
         }
 
-        ValueType type = Undefined;
+        ValueType type = Any;
         if (tokens[current].type == TokenType::COLON) {
             current++;
             if (tokens[current].type == TokenType::INT) {
@@ -2013,6 +2041,8 @@ static void assign_op_statement(int cpu, std::vector<AsmToken> &asmTokens, const
         error(tokens[current], "Cannot reassign function");
     } else if (env->isStruct(varname)) {
         error(tokens[current], "Cannot reassign struct");
+    } else if (env->isConstant(varname)) {
+        error(tokens[current], "Cannot reassign constant value");
     } else if (env->isGlobal(varname)) {
         current += 2;
 
@@ -2065,6 +2095,8 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
             error(tokens[current], "Cannot reassign function");
         } else if (env->isStruct(varname)) {
             error(tokens[current], "Cannot reassign struct");
+        } else if (env->isConstant(varname)) {
+            error(tokens[current], "Cannot reassign constant value");
         } else if (env->isGlobal(varname)) {
             current += 2;
 
@@ -2250,7 +2282,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     check(tokens[current++], TokenType::LEFT_PAREN, "`(' expected");
 
     if (tokens[current].type != TokenType::RIGHT_PAREN) {
-        ValueType type = Undefined;
+        ValueType type = Any;
 
         auto param = identifier(tokens[current++]);
         if (tokens[current].type == TokenType::COLON) {
@@ -2330,12 +2362,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     while (tokens[current].type != TokenType::RIGHT_PAREN) {
         check(tokens[current++], TokenType::COMMA, "`,' expected");
 
-        ValueType type = Integer;
-        if (tokens[current].type == TokenType::STAR) {
-            current++;
-            type = String();
-        }
-
+        ValueType type = Any;
         auto param = identifier(tokens[current++]);
 
         if (tokens[current].type == TokenType::COLON) {
@@ -2438,7 +2465,7 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     while (tokens[current].type != TokenType::RIGHT_BRACE) {
         auto newtype = declaration(cpu, asmTokens, tokens);
 
-        if (type == None) {
+        if (type == None || type == Any) {
             type = newtype;
         } else if (type != newtype) {
             error(tokens[current], "Return type mismatch");
@@ -2450,6 +2477,10 @@ static void define_function(int cpu, std::vector<AsmToken> &asmTokens, const std
     env = env->endScope();
 
     function.returnType = type;
+    if (function.returnType == Any) {
+        warning(tokens[current], "Function " + name + " is returning an unbound value");
+    }
+
     env->updateFunction(name, function);
 
     add(asmTokens, OpCode::RETURN);
