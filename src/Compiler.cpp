@@ -64,6 +64,14 @@ static std::string identifier(const Token &token) {
     return token.str;
 }
 
+static void checkTypeOrAny(const Token &token, const ValueType &type, const ValueType &check) {
+    if (type == Any) {
+        warning(token, "Unbound value found where " + ValueTypeToString(check) + " value or typed variable expected");
+    } else if (type != check) {
+        error(token, ValueTypeToString(check) + " value or typed variable expected");
+    }
+}
+
 static void check(const Token &token, TokenType type, const std::string &err) {
     if (token.type != type)
         error(token, token.str + " " + err);
@@ -1342,6 +1350,7 @@ static ValueType prefix(int cpu, std::vector<AsmToken> &asmTokens, const std::ve
     } else if (tokens[current].type == TokenType::TILDE) {
         current++;
         auto type = prefix(cpu, asmTokens, tokens, rbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
         add(asmTokens, OpCode::POPC);
         add(asmTokens, OpCode::BNOT);
         add(asmTokens, OpCode::PUSHC);
@@ -1503,42 +1512,60 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::BACKSLASH) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::IDIV);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::LEFT_SHIFT) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::LSHIFT);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::RIGHT_SHIFT) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::RSHIFT);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::AMPERSAND) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::BAND);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::PIPE) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::BOR);
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::CARAT) {
+        checkTypeOrAny(tokens[current-2], lType, Integer);
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
+        checkTypeOrAny(tokens[current-1], type, Integer);
+
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
         add(asmTokens, OpCode::XOR);
