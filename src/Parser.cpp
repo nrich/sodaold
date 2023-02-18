@@ -15,6 +15,10 @@ static bool isDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
+static bool isHex(char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
 static bool isAlpha(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
@@ -78,15 +82,21 @@ std::vector<Token> parse(const std::string &source) {
             auto tokenType = TokenType::INTEGER;
             size_t start = i++;
 
-            while (isDigit(source[i]))
-                i++;
-
-            if (source[i] == '.' && isDigit(source[i+1])) {
-                tokenType = TokenType::REAL;
-                i++;
-
+            if ((source[i] == 'x' || source[i] == 'X') && isHex(source[i+1])) {
+                ++i;
+                while (isHex(source[i]))
+                    i++;
+            } else {
                 while (isDigit(source[i]))
                     i++;
+
+                if (source[i] == '.' && isDigit(source[i+1])) {
+                    tokenType = TokenType::REAL;
+                    i++;
+
+                    while (isDigit(source[i]))
+                        i++;
+                }
             }
 
             tokens.push_back(Token(tokenType, line, i-pos, source.substr(start, i-start)));

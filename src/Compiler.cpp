@@ -1028,7 +1028,12 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
         add(asmTokens, OpCode::PUSHC);
         return Integer;
     } else if (token.type == TokenType::INTEGER) {
-        addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
+        if (token.str.size() > 2 && (token.str[1] == 'x' || token.str[1] == 'X')) {
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str, nullptr, 16)));
+        } else {
+            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
+        }
+
         add(asmTokens, OpCode::PUSHC);
         return Integer;
     } else if (token.type == TokenType::REAL) {
