@@ -59,6 +59,7 @@ std::string OpCodeAsString(OpCode opcode) {
         case OpCode::TAN: return "TAN";
         case OpCode::RND: return "RND";
         case OpCode::SEED: return "SEED";
+        case OpCode::BYT: return "BYT";
         case OpCode::FLT: return "FLT";
         case OpCode::INT: return "INT";
         case OpCode::PTR: return "PTR";
@@ -180,6 +181,7 @@ std::map<std::string, std::pair<OpCode, ArgType>> OpCodeDefinition = {
     {"SEED", {OpCode::SEED, ArgType::NONE}},
 
     {"FLT", {OpCode::FLT, ArgType::NONE}},
+    {"BYT", {OpCode::BYT, ArgType::NONE}},
     {"INT", {OpCode::INT, ArgType::NONE}},
     {"PTR", {OpCode::PTR, ArgType::NONE}},
     {"STR", {OpCode::STR, ArgType::NONE}},

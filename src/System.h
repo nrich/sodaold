@@ -80,6 +80,7 @@ enum class OpCode {
     RND,
     SEED,
 
+    BYT,
     FLT,
     INT,
     PTR,

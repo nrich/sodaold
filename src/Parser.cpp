@@ -127,6 +127,10 @@ std::vector<Token> parse(const std::string &source) {
                     }
                     break;
                 case 'c':
+                    if (keyword == "chr") {
+                        tokenType = TokenType::BUILTIN;
+                    }
+                    else
                     if (keyword == "clock") {
                         tokenType = TokenType::BUILTIN;
                     }
@@ -205,10 +209,6 @@ std::vector<Token> parse(const std::string &source) {
                         tokenType = TokenType::BUILTIN;
                     }
                 case 'l':
-                    if (keyword == "len") {
-                        tokenType = TokenType::BUILTIN;
-                    }
-                    else
                     if (keyword == "log") {
                         tokenType = TokenType::BUILTIN;
                     }
@@ -562,7 +562,7 @@ std::vector<Token> parse(const std::string &source) {
                             i++;
                             break;
                         default:
-                            tokens.push_back(Token(TokenType::NOT, line, i-pos, "!"));
+                            tokens.push_back(Token(TokenType::NOT, line, i-pos, "!", Precedence::UNARY));
                     }
                     break;
                 case '>':

@@ -125,6 +125,13 @@ static uint32_t Int16AsValue(int16_t i) {
     return (uint32_t)(QNAN|(uint16_t)i);
 }
 
+static uint32_t ByteAsValue(int16_t i) {
+    const uint32_t QNAN = 0x7F800000;
+    const uint32_t BYTE_BIT = 0x00010000;
+
+    return (uint32_t)(QNAN|BYTE_BIT|(uint16_t)i);
+}
+
 static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::vector<Token> &tokens) {
     auto token = tokens[current];
 
@@ -159,6 +166,15 @@ static ValueType builtin(int cpu, std::vector<AsmToken> &asmTokens, const std::v
         add(asmTokens, OpCode::ATAN);
         add(asmTokens, OpCode::PUSHC);
         return Float;
+    } else if (token.str == "chr") {
+        auto type = expression(cpu, asmTokens, tokens, 0);
+        if (type == None || type == Undefined)
+            error(token, "Function `chr': Cannot assign a void value to parameter 1");
+
+        add(asmTokens, OpCode::POPC);
+        add(asmTokens, OpCode::BYT);
+        add(asmTokens, OpCode::PUSHC);
+        return Byte;
     } else if (token.str == "clock") {
         check(tokens[current], TokenType::RIGHT_PAREN, "`)' expected");
         addSyscall(asmTokens, OpCode::SYSCALL, SysCall::CLOCK, RuntimeValue::C);
@@ -1024,9 +1040,9 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
 
         return String(token.str);
     } else if (token.type == TokenType::CHARACTER) {
-        addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)token.str[0]));
+        addValue16(asmTokens, OpCode::SETC, ByteAsValue((int8_t)token.str[0]));
         add(asmTokens, OpCode::PUSHC);
-        return Integer;
+        return Byte;
     } else if (token.type == TokenType::INTEGER) {
         if (token.str.size() > 2 && (token.str[1] == 'x' || token.str[1] == 'X')) {
             addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str, nullptr, 16)));
@@ -1627,7 +1643,7 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
             add(asmTokens, OpCode::IDXC);
             add(asmTokens, OpCode::PUSHC);
 
-            return Integer;
+            return Byte;
         } else {
             error(tokens[current], "Array or string expected");
         }
@@ -2032,7 +2048,7 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
             add(asmTokens, OpCode::ADD);
             add(asmTokens, OpCode::PUSHC);
 
-            return Integer;
+            return Byte;
         } else {
             error(tokens[current], "Array or string expected");
         }
