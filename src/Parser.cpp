@@ -78,25 +78,33 @@ std::vector<Token> parse(const std::string &source) {
             pos = i;
         }
 
-        if (isDigit(source[i])) {
+        if (source[i] == '0') {
             auto tokenType = TokenType::INTEGER;
             size_t start = i++;
 
-            if ((source[i] == 'x' || source[i] == 'X') && isHex(source[i+1])) {
+            if (source[i] == 'x' || source[i] == 'X') {
                 ++i;
+                if (!isHex(source[i]))
+                    error(line, i-pos, "Invalid hex digit");
+
                 while (isHex(source[i]))
-                    i++;
-            } else {
+                    ++i;
+            }
+
+            tokens.push_back(Token(tokenType, line, i-pos, source.substr(start, i-start)));
+        } else if (isDigit(source[i])) {
+            auto tokenType = TokenType::INTEGER;
+            size_t start = i++;
+
+            while (isDigit(source[i]))
+                i++;
+
+            if (source[i] == '.' && isDigit(source[i+1])) {
+                tokenType = TokenType::REAL;
+                i++;
+
                 while (isDigit(source[i]))
                     i++;
-
-                if (source[i] == '.' && isDigit(source[i+1])) {
-                    tokenType = TokenType::REAL;
-                    i++;
-
-                    while (isDigit(source[i]))
-                        i++;
-                }
             }
 
             tokens.push_back(Token(tokenType, line, i-pos, source.substr(start, i-start)));
@@ -105,7 +113,7 @@ std::vector<Token> parse(const std::string &source) {
             size_t start = i++;
             auto tokenType = TokenType::IDENTIFIER;
 
-            while((isAlpha(source[i]) || isDigit(source[i])))
+            while ((isAlpha(source[i]) || isDigit(source[i])))
                 i++;
 
             auto token = source.substr(start, i-start);
