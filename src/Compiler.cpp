@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stack>
 #include <algorithm>
+#include <numeric>
 
 #include "Environment.h"
 
@@ -42,6 +43,19 @@ static std::string str_tolower(std::string s) {
 }
 */
 
+
+static std::string join(std::vector<std::string> &strings, std::string delim) {
+    if (strings.empty()) {
+        return std::string();
+    }
+ 
+    return std::accumulate(strings.begin() + 1, strings.end(), strings[0],
+        [&delim](std::string x, std::string y) {
+            return x + delim + y;
+        }
+    );
+}
+
 static void error(const Token &token, const std::string &err) {
     std::ostringstream s;
     s << "Error at line " << token.line << " position " << token.position << ": " << err;
@@ -71,6 +85,20 @@ static void checkTypeOrAny(const Token &token, const ValueType &type, const Valu
         error(token, ValueTypeToString(check) + " value or typed variable expected");
     }
 }
+
+static void checkTypeOrAny(const Token &token, const ValueType &type, const std::vector<ValueType> &checks) {
+    std::vector<std::string> type_names;
+
+    std::transform(checks.begin(), checks.end(), std::back_inserter(type_names),
+        [](ValueType t) { return ValueTypeToString(t); });
+
+    if (type == Any) {
+        warning(token, "Unbound value found where " + join(type_names, " or ") + " value or typed variable expected");
+    } else if (std::find(checks.begin(), checks.end(), type) == checks.end()) {
+        error(token, join(type_names, " or ") + " value or typed variable expected");
+    }
+}
+
 
 static void check(const Token &token, TokenType type, const std::string &err) {
     if (token.type != type)
@@ -1044,14 +1072,27 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
         add(asmTokens, OpCode::PUSHC);
         return Byte;
     } else if (token.type == TokenType::INTEGER) {
+        auto integer_type = Integer;
         if (token.str.size() > 2 && (token.str[1] == 'x' || token.str[1] == 'X')) {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str, nullptr, 16)));
+            int16_t value = (int16_t)std::stoi(token.str, nullptr, 16);
+            if (value < 256) {
+                addValue16(asmTokens, OpCode::SETC, ByteAsValue(value));
+                integer_type = Byte;
+            } else {
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(value));
+            }
         } else {
-            addValue16(asmTokens, OpCode::SETC, Int16AsValue((int16_t)std::stoi(token.str)));
+            int16_t value = (int16_t)std::stoi(token.str);
+            if (value < 256) {
+                addValue16(asmTokens, OpCode::SETC, ByteAsValue(value));
+                integer_type = Byte;
+            } else {
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(value));
+            }
         }
 
         add(asmTokens, OpCode::PUSHC);
-        return Integer;
+        return integer_type;
     } else if (token.type == TokenType::REAL) {
         addFloat(asmTokens, OpCode::SETC, std::stof(token.str));
         add(asmTokens, OpCode::PUSHC);
@@ -1533,9 +1574,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::BACKSLASH) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -2010,8 +2051,9 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
 
             addValue16(asmTokens, OpCode::SETB, Int16AsValue(array.offset));
 
-            if (expression(cpu, asmTokens, tokens) != Integer)
-                error(tokens[current], "Integer expected");
+            auto index_type = expression(cpu, asmTokens, tokens);
+            if (index_type != Integer && index_type != Byte)
+                error(tokens[current], "Integer value expected");
 
             add(asmTokens, OpCode::POPA);
             add(asmTokens, OpCode::MUL);
@@ -2038,7 +2080,8 @@ static ValueType parseIndexStatement(int cpu, std::vector<AsmToken> &asmTokens, 
         } else if (std::holds_alternative<String>(containerType)) {
             auto _string = std::get<String>(containerType);
 
-            if (expression(cpu, asmTokens, tokens) != Integer)
+            auto index_type = expression(cpu, asmTokens, tokens);
+            if (index_type != Integer && index_type != Byte)
                 error(tokens[current], "Integer value expected");
 
             check(tokens[current++], TokenType::RIGHT_BRACKET, "`]' expected");
@@ -2152,6 +2195,8 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
 
             add(asmTokens, OpCode::POPC);
             addPointer(asmTokens, OpCode::STOREC, env->set(varname, type));
+
+            return type;
         } else {
             current += 2;
 
@@ -2163,6 +2208,8 @@ static ValueType statement(int cpu, std::vector<AsmToken> &asmTokens, const std:
             add(asmTokens, OpCode::POPC);
 
             addValue16(asmTokens, OpCode::WRITEC, Int16AsValue(env->set(varname, type)));
+
+            return type;
         }
     } else if (tokens[current].type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::PLUS_ASSIGN) {
         assign_op_statement(cpu, asmTokens, tokens, OpCode::ADD);

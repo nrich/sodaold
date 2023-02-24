@@ -89,6 +89,14 @@ std::vector<Token> parse(const std::string &source) {
 
                 while (isHex(source[i]))
                     ++i;
+            } else if (source[i] == '.' && isDigit(source[i+1])) {
+                tokenType = TokenType::REAL;
+                i++;
+
+                while (isDigit(source[i]))
+                    i++;
+            } else if (isDigit(source[i])) {
+                error(line, i-pos, "Invalid numeric constant");
             }
 
             tokens.push_back(Token(tokenType, line, i-pos, source.substr(start, i-start)));
