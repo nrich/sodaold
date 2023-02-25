@@ -1,0 +1,193 @@
+val SCREENWIDTH = 319;
+val SCREENHEIGHT = 239; 
+val MAPWIDTH = 24;
+val MAPHEIGHT = 24;
+val MOVESPEED = 0.1;
+val ROTSPEED = 0.1;
+
+var PosX = 22.0;
+var PosY = 12.0;
+
+var DirX = -1.0; 
+var DirY = 0.0;
+
+var PlaneX = 0.0; 
+var PlaneY = 0.66;
+
+var Time = 0.0; 
+var OldTime = 0.0;
+
+var WorldMap = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1],
+    [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1],
+    [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,0,0,0,0,4,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+def move(movespeed) {
+    if (WorldMap[int(PosY)][int(PosX + DirX * movespeed)] == 0)
+        PosX = PosX + DirX * movespeed;
+
+    if (WorldMap[int(PosY + DirY * movespeed)][int(PosX)] == 0)
+        PosY = PosY + DirY * movespeed;
+}
+
+def turn(rotatespeed) {
+    var OldDirX = DirX;
+
+    DirX = DirX * cos(rotatespeed) - DirY * sin(rotatespeed);
+    DirY = OldDirX * sin(rotatespeed) + DirY * cos(rotatespeed);
+
+    var OldPlaneX = PlaneX;
+
+    PlaneX = PlaneX * cos(rotatespeed) - PlaneY * sin(rotatespeed);
+    PlaneY = OldPlaneX * sin(rotatespeed) + PlaneY * cos(rotatespeed);
+}
+
+def main() {
+    while (1) {
+        cls();
+
+        drawbox(0,0,319,119,117,1);
+        drawbox(0,120,319,239,94,1);
+
+        for (var x = 0; x < SCREENWIDTH; x += 2) {
+            var CameraX = 2.0 * x / SCREENWIDTH - 1.0;
+            var RayDirX = DirX + PlaneX * CameraX;
+            var RayDirY = DirY + PlaneY * CameraX;
+
+            var MapX = int(PosX);
+            var MapY = int(PosY);
+
+            var DeltaDistX = abs(1.0/RayDirX);
+            var DeltaDistY = abs(1.0/RayDirY);
+
+            var PerpWallDist = 1.0;
+
+            var StepX = 0;
+            var StepY = 0;
+            var hit = 0;
+            var side = 0;
+
+            var SideDistX = 0;
+            if (RayDirX < 0.0) {
+                StepX = -1;
+                SideDistX = (PosX - MapX) * DeltaDistX;
+            } else {
+                StepX = 1; 
+                SideDistX = (MapX + 1.0 - PosX) * DeltaDistX;
+            }
+
+            var SideDistY = 0;
+            if (RayDirY < 0.0) {
+                StepY = -1;
+                SideDistY = (PosY - MapY) * DeltaDistY;
+            } else {
+                StepY = 1; 
+                SideDistY = (MapY + 1.0 - PosY) * DeltaDistY;
+            }
+
+            while (!hit) {
+                if (SideDistX < SideDistY) {
+                    SideDistX = SideDistX + DeltaDistX;
+                    MapX = MapX + StepX;
+                    side = 0;
+                } else {
+                    SideDistY = SideDistY + DeltaDistY;
+                    MapY = MapY + StepY;
+                    side = 1;
+                } 
+
+                if (WorldMap[MapY][MapX] > 0)
+                    hit = 1;
+            }
+
+            if (!side) {
+                PerpWallDist = (MapX - PosX + (1.0 - StepX) / 2.0) / RayDirX;
+            } else {
+                PerpWallDist = (MapY - PosY + (1.0 - StepY) / 2.0) / RayDirY;
+            }
+
+            var LineHeight = int(SCREENHEIGHT/PerpWallDist);
+            var DrawStart = -LineHeight \ 2 + SCREENHEIGHT \ 2;
+
+            if (DrawStart < 0)
+                DrawStart = 0;
+
+            var DrawEnd = LineHeight \ 2 + SCREENHEIGHT \ 2;
+            if (DrawEnd >= SCREENHEIGHT)
+                DrawEnd = SCREENHEIGHT - 1;
+
+            var Colour = 15;
+
+            var Tile = WorldMap[MapY][MapX];
+
+            if (Tile == 1) {
+                if (!side)
+                    Colour = 124;
+                else
+                    Colour = 1;
+            } else if (Tile == 2) {
+                if (!side)
+                    Colour = 28;
+                else
+                    Colour = 22;
+            } else if (Tile == 3) {
+                if (!side)
+                    Colour = 19;
+                else
+                    Colour = 17;
+            } else if (Tile == 4) {
+                if (!side)
+                    Colour = 7;
+                else
+                    Colour = 8;
+            } else {
+                Colour = 0;
+            }
+
+            drawline(x, DrawStart, x, DrawEnd, Colour);
+            drawline(x+1, DrawStart, x+1, DrawEnd, Colour);
+        }
+
+        if (keypressed(119)) {
+            move(MOVESPEED);
+        }
+
+        if (keypressed(115)) {
+            move(-MOVESPEED);
+        }
+
+        if (keypressed(97)) {
+            turn(ROTSPEED);
+        }
+
+        if (keypressed(100)) {
+            turn(-ROTSPEED);
+        }
+
+        vsync();
+    }
+}
+
+main();
