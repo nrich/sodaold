@@ -1825,7 +1825,7 @@ static void define_const(int cpu, std::vector<AsmToken> &asmTokens, const std::v
     if (type == None)
         error(tokens[current], "Cannot assign a void value to constant value `" + name + "'");
 
-    if (type != Integer && type != Float && !std::holds_alternative<String>(type))
+    if (type != Byte && type != Integer && type != Float && !std::holds_alternative<String>(type))
         error(tokens[current], "Cannot assign a " + ValueTypeToString(type) + " value to constant value `" + name + "'");
 
     add(asmTokens, OpCode::POPC);
