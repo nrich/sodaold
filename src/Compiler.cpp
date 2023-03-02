@@ -1081,6 +1081,14 @@ static ValueType TokenAsValue(int cpu, std::vector<AsmToken> &asmTokens, const s
             } else {
                 addValue16(asmTokens, OpCode::SETC, Int16AsValue(value));
             }
+        } else if (token.str.size() > 2 && token.str[1] == 'b') {
+            int16_t value = (int16_t)std::stoi(token.str.substr(2), nullptr, 2);
+            if (value < 256) {
+                addValue16(asmTokens, OpCode::SETC, ByteAsValue(value));
+                integer_type = Byte;
+            } else {
+                addValue16(asmTokens, OpCode::SETC, Int16AsValue(value));
+            }
         } else {
             int16_t value = (int16_t)std::stoi(token.str);
             if (value < 256) {
@@ -1584,9 +1592,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::LEFT_SHIFT) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -1594,9 +1602,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::RIGHT_SHIFT) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -1604,9 +1612,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::AMPERSAND) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -1614,9 +1622,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::PIPE) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
@@ -1624,9 +1632,9 @@ static ValueType Op(int cpu, std::vector<AsmToken> &asmTokens, const Token &lhs,
         add(asmTokens, OpCode::PUSHC);
         return type;
     } else if (token.type == TokenType::CARAT) {
-        checkTypeOrAny(tokens[current-2], lType, Integer);
+        checkTypeOrAny(tokens[current-2], lType, {Integer, Byte});
         auto type = expression(cpu, asmTokens, tokens, token.lbp);
-        checkTypeOrAny(tokens[current-1], type, Integer);
+        checkTypeOrAny(tokens[current-1], type, {Integer, Byte});
 
         add(asmTokens, OpCode::POPB);
         add(asmTokens, OpCode::POPA);
