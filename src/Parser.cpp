@@ -15,6 +15,11 @@ static bool isDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
+
+static bool isBinary(char c) {
+    return c == '0' || c == '1';
+}
+
 static bool isHex(char c) {
     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
@@ -88,6 +93,13 @@ std::vector<Token> parse(const std::string &source) {
                     error(line, i-pos, "Invalid hex digit");
 
                 while (isHex(source[i]))
+                    ++i;
+            } else if (source[i] == 'b') {
+                ++i;
+                if (!isBinary(source[i]))
+                    error(line, i-pos, "Invalid binary digit");
+
+                while (isBinary(source[i]))
                     ++i;
             } else if (source[i] == '.' && isDigit(source[i+1])) {
                 tokenType = TokenType::REAL;
